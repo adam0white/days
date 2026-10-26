@@ -1,0 +1,330 @@
+:root {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #382b38;
+  background: #f3e9d7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --paper: #f3e9d7;
+  --ink: #382b38;
+  --rust: #8c412f;
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 280px;
+}
+button,
+textarea,
+input {
+  font: inherit;
+}
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 3px solid #315e64;
+  outline-offset: 5px;
+}
+button {
+  min-height: 44px;
+}
+a {
+  color: var(--rust);
+  text-underline-offset: 0.2em;
+}
+.shell {
+  max-width: 1800px;
+  margin: 0 auto;
+}
+.masthead {
+  height: 76px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 40px;
+  border-bottom: 1px solid #382b3826;
+}
+.wordmark {
+  font-size: 25px;
+  letter-spacing: -0.05em;
+  font-weight: 400;
+}
+:where(.masthead) button {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid #382b3855;
+  border-radius: 2px;
+  padding: 8px 17px;
+  font-family: system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.stage {
+  display: grid;
+  grid-template-columns: 52% 48%;
+  min-height: calc(100svh - 126px);
+}
+#room {
+  min-width: 0;
+  min-height: 650px;
+  overflow: hidden;
+  background: #453441;
+  position: relative;
+}
+#room canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  inset: 0;
+}
+#scene {
+  align-self: center;
+  padding: 54px clamp(30px, 4.2vw, 84px);
+  max-width: 760px;
+  width: 100%;
+}
+.eyebrow {
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #775d52;
+  margin: 0 0 24px;
+}
+h1 {
+  font-weight: 400;
+  font-size: clamp(38px, 4.2vw, 65px);
+  line-height: 1.04;
+  letter-spacing: -0.045em;
+  margin: 0 0 27px;
+}
+#text {
+  font-size: clamp(19px, 1.65vw, 23px);
+  line-height: 1.55;
+}
+:where(#text) p {
+  margin: 0 0 0.85em;
+}
+#choices {
+  display: grid;
+  gap: 10px;
+  margin-top: 30px;
+}
+.choice {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--rust);
+  background: transparent;
+  color: #793c2e;
+  text-align: left;
+  font-size: 18px;
+  line-height: 1.35;
+  padding: 15px 19px;
+  border-radius: 2px;
+  transition:
+    background 140ms ease,
+    color 140ms ease;
+}
+.choice:hover {
+  background: #e8d7bd;
+}
+.choice:first-child {
+  background: var(--rust);
+  color: #fff4e4;
+}
+.choice:first-child:hover {
+  background: #743325;
+}
+#consequence {
+  color: #6c5148;
+  font-size: 16px;
+  font-style: italic;
+  line-height: 1.5;
+  margin: 22px 0 0;
+}
+.footer {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding: 12px 40px;
+  border-top: 1px solid #382b3826;
+  font-family: system-ui, sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #6e5b53;
+}
+:where(.footer) p {
+  margin: 0;
+}
+dialog {
+  border: 1px solid #98745d;
+  color: var(--ink);
+  background: var(--paper);
+  width: min(540px, calc(100% - 32px));
+  max-height: calc(100svh - 32px);
+  padding: 30px;
+  overflow-y: auto;
+  box-shadow: 0 15px 80px #241c3855;
+}
+dialog::backdrop {
+  background: #251d32a3;
+}
+dialog h2 {
+  font-weight: 400;
+  font-size: 32px;
+  letter-spacing: -0.03em;
+  margin: 0 0 20px;
+}
+dialog h3 {
+  font-weight: 400;
+  font-size: 23px;
+  margin: 26px 0 12px;
+}
+dialog p,
+dialog label {
+  font-size: 17px;
+  line-height: 1.5;
+}
+dialog button,
+.lab-tools button {
+  padding: 10px 15px;
+  background: transparent;
+  color: var(--rust);
+  border: 1px solid #8c412f80;
+  border-radius: 2px;
+  font-size: 16px;
+  line-height: 1.35;
+}
+dialog button:hover {
+  background: #e8d7bd;
+}
+dialog textarea {
+  display: block;
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid #9d8070;
+  border-radius: 0;
+  color: var(--ink);
+  background: #fcf6ea;
+  padding: 12px;
+  margin: 10px 0 18px;
+  font-size: 17px;
+}
+dialog label {
+  display: block;
+  margin: 12px 0;
+}
+dialog input[type="checkbox"] {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--rust);
+  margin-right: 9px;
+  vertical-align: middle;
+}
+.menu-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 18px 0;
+}
+.status {
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.content-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #715a50;
+}
+.lab-tools {
+  padding: 16px;
+  border-top: 1px dashed #9d8070;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+[hidden],
+.lab-tools[hidden] {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .masthead {
+    height: 61px;
+    padding: 0 22px;
+  }
+  .wordmark {
+    font-size: 23px;
+  }
+  :where(.masthead) button {
+    padding: 7px 13px;
+  }
+  .stage {
+    display: block;
+    min-height: 0;
+  }
+  #room {
+    height: clamp(190px, 31svh, 280px);
+    min-height: 0;
+  }
+  #scene {
+    padding: 29px 24px 39px;
+  }
+  .eyebrow {
+    margin-bottom: 15px;
+    font-size: 10px;
+  }
+  h1 {
+    font-size: 40px;
+    margin-bottom: 20px;
+  }
+  #text {
+    font-size: 19px;
+    line-height: 1.5;
+  }
+  #choices {
+    margin-top: 25px;
+  }
+  .choice {
+    font-size: 17px;
+    padding: 14px 16px;
+  }
+  .footer {
+    padding: 15px 24px;
+  }
+  dialog {
+    padding: 24px;
+  }
+  dialog h2 {
+    font-size: 29px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .choice {
+    transition: none;
+  }
+}
