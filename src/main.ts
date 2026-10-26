@@ -92,8 +92,9 @@ function render(focus = false) {
     context.open = !phoneLayout.matches;
     const summary = document.createElement("summary");
     summary.textContent = "How Leyla came home";
-    context.append(summary, ...paragraphs.slice(0, -1));
-    get("text").replaceChildren(context, ...paragraphs.slice(-1));
+    const goalIndex = current.text.findIndex((line) => line.startsWith("Keep a clear account"));
+    context.append(summary, ...paragraphs.filter((_, index) => index !== goalIndex));
+    get("text").replaceChildren(context, ...paragraphs.filter((_, index) => index === goalIndex));
   } else {
     get("text").replaceChildren(...paragraphs);
   }

@@ -170,7 +170,7 @@ test("the opening offers a whole first choice without scrolling", async ({ page 
   expect(box).not.toBeNull();
   expect(box!.y).toBeGreaterThanOrEqual(0);
   expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-  await expect(page.locator("#text")).toContainText("Keep a clear account");
+  await expect(page.getByText(/^Keep a clear account/)).toBeVisible();
   if (page.viewportSize()!.width <= 700) {
     await page.getByText("How Leyla came home", { exact: true }).click();
   }
