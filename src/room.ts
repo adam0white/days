@@ -1,4 +1,6 @@
 import { Application, Container, Graphics } from "pixi.js";
+// Pixi’s static sync functions support the site CSP without dynamic code generation.
+import "pixi.js/unsafe-eval";
 import type { GameView } from "./types.ts";
 
 /** The illustration carries atmosphere; all story information lives in the DOM. */

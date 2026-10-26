@@ -10,8 +10,8 @@ export default defineConfig({
   webServer: process.env.DAYS_TEST_URL
     ? undefined
     : {
-        command: "pnpm dev --port 4179",
-        url: "http://127.0.0.1:4179/@vite/client",
+        command: "pnpm build && pnpm exec wrangler dev --local --port 4179",
+        url: "http://127.0.0.1:4179",
         reuseExistingServer: !process.env.CI,
       },
   projects: [
