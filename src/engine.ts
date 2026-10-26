@@ -134,6 +134,10 @@ function runtime(game: Game, load = true): Story {
   story.BindExternalFunction("account", () => game.named, true);
   story.BindExternalFunction("promise", () => game.visit, true);
   story.BindExternalFunction("checked", () => game.checked, true);
+  story.BindExternalFunction("burak_holds", () => game.evidenceHolder === "Burak", true);
+  story.BindExternalFunction("private_page", () => game.privacy, true);
+  story.BindExternalFunction("completed_promise", () => game.confirmed, true);
+  story.BindExternalFunction("ate_soup", () => game.inputs.includes("welcome"), true);
   if (load) story.state.LoadJson(game.ink);
   return story;
 }
@@ -287,20 +291,22 @@ function choiceCost(game: Game, id: string): string {
     check: "1 hour to get the original; keep your savings.",
     pay: "Use your savings to quiet the demand now; recovering the original later takes another hour.",
     private: "Keep the private page closed; no early help with the entries.",
-    read: "Get help that saves 1 checking hour; expose a private story. Containing the harm later takes 1 hour.",
+    read: "Get help that saves 1 hour on a private comparison; expose a private story. Containing the harm later takes 1 hour.",
     ask: "Ask Selin to give up part of her evening; she may refuse.",
-    hide: "Protect Selin's evening; a visit without cover takes 2 hours.",
+    hide: `Protect Selin's evening; a visit without cover takes ${2 + (tiredness(game) >= 4 ? 1 : 0)} hours.`,
     rest: "1 hour to recover enough to read; fewer visitors can be received.",
     push: "Save the hour; become more tired, which can add a checking or travel hour.",
     compare: `${comparisonHours(game)} ${comparisonHours(game) === 1 ? "hour" : "hours"} to obtain and check the original; no time to recuperate.`,
     guess: `${comparisonHours(game, true)} ${comparisonHours(game, true) === 1 ? "hour" : "hours"} for Burak's phone check; rest while he calls.`,
     delegate: "Commit to a visit before departure; reserve the journey time.",
     conceal: "Accept a later delivery; give up seeing Şükrü during this leave.",
-    protect: "1 hour; keep the notebook, copy the bill, and answer questions yourself.",
-    publish: `Save 1 hour; entrust the closed notebook to Burak until after departure.${game.privacy ? " The private page stays closed." : " Earlier disclosure stays unresolved."}`,
+    protect: game.privacy
+      ? "1 hour; keep the notebook, copy the bill, and answer questions yourself."
+      : "1 hour; keep the notebook, apologise to the person whose page you read, and ask listeners not to repeat it.",
+    publish: `Save 1 hour; entrust the ${game.privacy ? "closed notebook" : "notebook you read aloud"} to Burak until after departure.${game.privacy ? " The private page stays closed." : " Earlier disclosure stays unresolved."}`,
     name: "1 hour to write and agree the next step; preserve your savings.",
     dismiss: "Pay the verified bill from your own savings; save the writing hour.",
-    confirm: `${journeyHours(game)} ${journeyHours(game) === 1 ? "hour" : "hours"} for the visit${game.laterDelivery ? "; change the later arrangement" : ""}; travel while carrying your remaining tiredness.`,
+    confirm: `${journeyHours(game)} ${journeyHours(game) === 1 ? "hour" : "hours"} for the visit${game.laterDelivery ? "; change the later arrangement" : ""}${tiredness(game) >= 2 ? "; travel while tired" : "; make the journey"}.`,
     leave: "1 hour and a paid delivery; give up making the visit yourself.",
     speak: "Ask Selin to stay and listen; the conversation tires you.",
     silent: "Keep your words private and recover in quiet; leave the conversation unfinished.",
@@ -357,20 +363,20 @@ function apply(game: Game, id: string): string {
           summary: "Leyla read a private hospital page aloud without permission.",
         },
       ]);
-      return "Hacer recognises the dates and offers to sort the entries with Burak. That saves one checking hour. The room has also heard a private hospital name. Selin pulls her chair back. Containing the disclosure will take an hour; it cannot make people unhear it.";
+      return "Hacer recognises the dates and offers to sort the entries with Burak. That saves one hour on a private comparison. The room has also heard a private hospital name. Selin pulls her chair back. Containing the disclosure will take an hour; it cannot make people unhear it.";
     case "ask":
       game.asked = true;
       game.helper = requestHelp(game);
       return game.helper
-        ? "Selin agrees to one short shift. It costs her an evening at home. Leyla still needs an hour for the visit itself."
-        : "Selin decides to go home. She cannot cover the door. A visit will take two hours, or Leyla can pay for an agreed delivery.";
+        ? `Selin agrees to one short shift. It costs her an evening at home. Leyla still needs ${journeyHours(game)} ${journeyHours(game) === 1 ? "hour" : "hours"} for the visit itself.`
+        : `Selin decides to go home. She cannot cover the door. A visit will take ${journeyHours(game)} hours, or Leyla can pay for an agreed delivery.`;
     case "hide":
-      return "Selin keeps her evening at home. Leyla will have no cover from her. She can still agree a visit or a later delivery with Şükrü.";
+      return `Selin keeps her evening at home. Leyla will have no cover from her. A visit without cover takes ${journeyHours(game)} hours. She can still agree a visit or a later delivery with Şükrü.`;
     case "rest":
       if (!spend(game, 1)) return "There is no free hour left for the planned rest.";
       game.fatigue = Math.max(0, game.fatigue - 3);
       game.rested = true;
-      return "Leyla eats and lies down for an hour. The door stays closed or covered. She can follow the papers again, but that hour is gone.";
+      return `Leyla eats and lies down for an hour. ${game.helper ? "Selin covers the door for the agreed shift." : "The door stays closed."} She can follow the papers again, but that hour is gone.`;
     case "push":
       game.fatigue = Math.min(5, game.fatigue + 2);
       return "Leyla stays at the door and saves an hour. Her tiredness rises. A second reader may now take longer, even if Selin covers the visit.";
@@ -394,7 +400,7 @@ function apply(game: Game, id: string): string {
     case "protect": {
       const hours = 1;
       if (!spend(game, hours))
-        return "There is no hour left to copy the bill and answer the questions. Any earlier disclosure is still unanswered.";
+        return `There is no hour left to ${game.privacy ? "copy the bill and answer the questions. The private page stays private." : "apologise and ask the listeners not to repeat the page. The earlier disclosure is still unanswered."}`;
       game.privacyManaged = true;
       return game.privacy
         ? "Leyla spends an hour copying only the bill and answering questions without sharing the private page. Burak takes the copy. Leyla keeps the notebook."
@@ -402,17 +408,17 @@ function apply(game: Game, id: string): string {
     }
     case "publish":
       game.notebookKept = false;
-      return "Burak takes the closed notebook to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later. This does not answer any earlier disclosure.";
+      return `Burak takes the ${game.privacy ? "closed notebook" : "notebook you read aloud"} to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later.${!game.privacy ? " This does not answer the earlier disclosure." : ""}`;
     case "name":
       game.named = game.compared && spend(game, 1);
       return game.named
         ? "Leyla spends an hour recording Şükrü's claim and Burak's agreed next step with the estate contact. She keeps her savings and accepts that this follow-up will continue after leave."
-        : "The account cannot be recorded safely: either the entries are unconfirmed or no writing hour remains.";
+        : `The account cannot be recorded safely: ${!game.compared ? "the entries are unconfirmed" : "no writing hour remains"}.`;
     case "dismiss":
       game.named = game.compared;
       game.paidCreditor = game.named;
       return game.named
-        ? "Şükrü confirms receipt of Leyla's voluntary payment for the verified boiler bill. The account is clear now, at the cost of her own savings. Burak still owes her any mistaken earlier payment."
+        ? `Şükrü confirms receipt of Leyla's voluntary payment for the verified boiler bill. The account is clear now, at the cost of her own savings.${game.paid ? " Burak still owes her the mistaken earlier payment." : ""}`
         : "Without the checked entries, Leyla cannot safely pay the boiler bill. The account remains disputed.";
     case "confirm": {
       const hours = journeyHours(game);
@@ -432,7 +438,7 @@ function apply(game: Game, id: string): string {
       return "Selin stays to listen. Leyla says that her marriage ended and she wanted to tell Kemal. The conversation costs them both energy. Selin does not turn it into a lesson.";
     case "silent":
       game.fatigue = Math.max(0, game.fatigue - 1);
-      return "Selin does not press. Leyla keeps that part of her life private and rests beside her. The conversation remains unfinished; the account and the envelope do not require it.";
+      return "Selin does not press. Selin goes home. Leyla keeps that part of her life private and rests alone. The conversation remains unfinished; the account and the envelope do not require it.";
     case "close": {
       game.outcome =
         game.named && game.confirmed && (game.privacy || game.privacyManaged) ? "won" : "lost";
@@ -441,7 +447,11 @@ function apply(game: Game, id: string): string {
         return `You leave with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
       const missing = [
         !game.named ? "the account is still disputed" : "",
-        !game.confirmed ? "the promised visit or delivery is still unanswered" : "",
+        !game.confirmed
+          ? game.laterDelivery
+            ? "the agreed later delivery has not been paid for or assigned a date; Şükrü is still waiting for the photograph and letter"
+            : "the promised visit has not happened; Şükrü is still waiting for the photograph and letter"
+          : "",
         !game.privacy && !game.privacyManaged ? "the disclosure has not been addressed" : "",
       ].filter(Boolean);
       return `You close the door, but ${missing.join("; ")}. There is still work to do after your leave.${history}`;

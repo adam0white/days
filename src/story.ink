@@ -3,6 +3,10 @@ EXTERNAL helped()
 EXTERNAL account()
 EXTERNAL promise()
 EXTERNAL checked()
+EXTERNAL burak_holds()
+EXTERNAL private_page()
+EXTERNAL completed_promise()
+EXTERNAL ate_soup()
 -> door
 === door ===
 # title: The door
@@ -19,7 +23,7 @@ Keep a clear account and answer the promised visit before the third evening. Pro
 === claim ===
 # title: A folded account
 Burak brings two repair bills. Kemal wrote "advance returned" across both. Burak paid for an earlier repair; Şükrü paid for the boiler. The crossed-out line does not say who got their money back.
-{holder()} has the receipt. "We need the name on it," Burak says.
+{holder()} has the receipt. {burak_holds():Burak unfolds it. "Let me check which repair this belongs to," he says.|Burak asks {holder()}, "Can we check which repair that receipt belongs to?"}
 // Source: human-framework research/janazah-and-taziyah-sources.md §6, Tirmidhi 1078/1079 row (raw, Good per Ali Za'i), and §8.6. This is Şükrü's belief and fear; no state of Kemal is asserted or modelled.
 Şükrü says, "I believe the saying that a believer's soul remains suspended by a debt until it is paid. That frightens me. I want this paid today." Burak says, "Then let's find out which bill is still open."
 * [Ask Burak to check the paper before any payment. # action:check]
@@ -46,8 +50,8 @@ Burak says, "I was taught to offer condolences once. I won't keep calling you ba
  -> morning
 === morning ===
 # title: The second morning
-The soup bowl is empty. The coat has not moved. Leyla has slept badly. Burak can return later with his papers; nobody needs her answer this minute.
-* [Eat and rest while the door is covered or closed. # action:rest]
+{ate_soup():The soup bowl is empty.|The soup waits by the door.} The coat has not moved. Leyla has slept badly. Burak can return later with his papers; nobody needs her answer this minute.
+* [Eat and rest while {helped():Selin covers the door|the door is closed}. # action:rest]
  -> receipt
 * [Stay at the door and skip the meal. # action:push]
  -> receipt
@@ -55,7 +59,7 @@ The soup bowl is empty. The coat has not moved. Leyla has slept badly. Burak can
 # title: A living witness
 {checked():{holder()} brings the original receipt you requested. It records money returned to Burak for an earlier repair.|{holder()} has a phone photograph of a receipt. The edge with the recipient’s name is cut off. It may concern an earlier repair.}
 {checked():It does not settle the boiler bill owed to Şükrü. The original shows that Kemal joined two separate entries on one line.|The photograph does not show who received the money. Şükrü says he has not been paid for the boiler.}
-Burak says, "I was wrong to call it one account. We need the original receipt and Şükrü to confirm what remains."
+Burak says, "I was wrong to call it one account. {checked():We have the original receipt. We need to compare both entries and ask Şükrü what remains.|We need the original receipt and Şükrü to confirm what remains.}"
 * [Compare the receipt with both entries in private. # action:compare]
  -> visit
 * [Ask Burak to check the original by phone. Sit down while he calls. # action:guess]
@@ -72,9 +76,9 @@ Burak says, "I was wrong to call it one account. We need the original receipt an
 # title: What the room may hear
 Hacer hears that there is a hospital name in the notebook. "Is that why he needed money?" she asks. The person named there has not agreed to tell anyone.
 The account can be checked without telling that story. Keeping the notebook means handling the questions yourself. Lending it means trusting Burak with the original.
-* [Keep the notebook. Answer questions without sharing the hospital name. # action:protect]
+* [Keep the notebook. {private_page():Answer questions without sharing the hospital name.|Apologise for reading the page and ask the listeners not to repeat it.} # action:protect]
  -> third
-* [Lend Burak the closed notebook. Let him handle the bill in private. # action:publish]
+* [Lend Burak the {private_page():closed notebook|notebook you read aloud}. Let him handle the bill in private. # action:publish]
  -> third
 === third ===
 # title: The third morning
@@ -87,7 +91,7 @@ The house is quieter. This is the last day of Leyla's leave. It is not the last 
 === answer ===
 # title: An answer before departure
 {promise():Şükrü has agreed to receive the photograph and letter. He needs to know who is coming.|Şükrü still has no answer about the envelope.}
-{account():The account now has separate entries and a named person following it.|The two entries are still being treated as one.}
+{account():The account now has separate entries and a named person following it.|The account still needs a recorded resolution.}
 * [Make the journey yourself, if there is time. # action:confirm]
  -> witness
 * [Pay for delivery. Ask Burak to take it on the agreed date. # action:leave]
@@ -104,7 +108,7 @@ Leyla can tell her one thing that belongs to Leyla: she wanted to tell Kemal, an
  -> evening
 === evening ===
 # title: The third evening
-The room needs no final speech. Hacer takes her saucepan. Burak leaves a number where Leyla can reach him. The envelope must leave with Leyla if its visit is still unanswered.
+The room needs no final speech. Hacer takes her saucepan. Burak leaves a number where Leyla can reach him.{not completed_promise(): The envelope must leave with Leyla. Şükrü is still waiting for the photograph and letter.}
 * [Close the door and take the next steps with you. # action:close]
  -> ending
 === ending ===
