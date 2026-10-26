@@ -1,6 +1,6 @@
 import { createLab } from "@adam0white/lab-client";
 import { choose, createGame, exportRun, hashGame, replay, view } from "./engine.ts";
-import { mountRoom } from "./room.ts";
+import type { mountRoom } from "./room.ts";
 import "./style.css";
 
 function get<T extends HTMLElement>(id: string): T {
@@ -40,7 +40,8 @@ if (saved) {
     store(storageKey, "");
   }
 }
-const room = await mountRoom(get("room"));
+let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
+let disposed = false;
 let busy = false;
 function save() {
   store(storageKey, JSON.stringify(exportRun(game)));
@@ -90,7 +91,7 @@ function render(focus = false) {
     });
     get("choices").append(button);
   }
-  room.update(current);
+  room?.update(current);
   lab.screen(current.outcome === "playing" ? `day ${current.day}` : "ending");
   if (current.outcome !== "playing") lab.milestone("ending reached");
   if (focus) {
@@ -113,10 +114,12 @@ function home() {
   get("lab").hidden = false;
   recordingState();
 }
-get("menu").addEventListener("click", () => {
+const menuButton = get<HTMLButtonElement>("menu");
+menuButton.addEventListener("click", () => {
   home();
   menu.showModal();
 });
+menuButton.disabled = false;
 get("resume").addEventListener("click", () => menu.close());
 get("feedback").addEventListener("click", () => {
   get("menu-home").hidden = true;
@@ -245,7 +248,23 @@ window.addEventListener(
   "beforeunload",
   () => {
     stopTracking();
-    room.destroy();
+    disposed = true;
+    room?.destroy();
   },
   { once: true },
 );
+
+// The room is decorative. Loading it must not delay play or the recording controls.
+void import("./room.ts")
+  .then(({ mountRoom }) => mountRoom(get("room")))
+  .then((illustration) => {
+    if (disposed) {
+      illustration.destroy();
+      return;
+    }
+    room = illustration;
+    room.update(view(game));
+  })
+  .catch(() => {
+    // The story and menu remain usable when graphics are unavailable.
+  });

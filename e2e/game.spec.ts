@@ -90,3 +90,49 @@ test("New game starts a distinct recorded attempt", async ({ page }) => {
     .poll(() => page.evaluate(() => sessionStorage.getItem("hf-lab-run:days")))
     .not.toBe(previous);
 });
+
+test("story and menu work while the renderer waits or fails", async ({ page }) => {
+  let releaseRenderer = () => {};
+  const rendererGate = new Promise<void>((resolve) => {
+    releaseRenderer = resolve;
+  });
+  let rendererRequested = false;
+  let failRenderer = false;
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.route("**/assets/WebGLRenderer-*.js", async (route) => {
+    rendererRequested = true;
+    if (failRenderer) {
+      await route.abort();
+      return;
+    }
+    await rendererGate;
+    await route.continue();
+  });
+  try {
+    await page.goto("/", { waitUntil: "commit" });
+    await expect.poll(() => rendererRequested).toBe(true);
+    await page.getByRole("button", { name: "Begin the three days" }).click({ timeout: 3000 });
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "The door can wait" })).toBeVisible();
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await page.locator(".choice").first().click();
+    await expect(page.getByRole("heading", { name: "A folded account" })).toBeVisible();
+    await expect(page.locator("#room canvas")).toHaveCount(0);
+    releaseRenderer();
+    await expect(page.locator("#room canvas")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "A folded account" })).toBeVisible();
+
+    failRenderer = true;
+    await page.reload({ waitUntil: "commit" });
+    await page.getByRole("button", { name: "Menu", exact: true }).click();
+    await expect(page.getByRole("dialog", { name: "The door can wait" })).toBeVisible();
+    await page.getByRole("button", { name: "Resume", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "A folded account" })).toBeVisible();
+    await page.locator(".choice").first().click();
+    await expect(page.getByRole("heading", { name: "A page folded inwards" })).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    releaseRenderer();
+  }
+});

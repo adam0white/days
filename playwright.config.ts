@@ -12,7 +12,7 @@ export default defineConfig({
     : {
         command: "pnpm build && pnpm exec wrangler dev --local --port 4179",
         url: "http://127.0.0.1:4179",
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
       },
   projects: [
     {
