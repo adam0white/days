@@ -160,3 +160,38 @@ test("room objects expose their action and cost before activation", async ({ pag
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "A folded account" })).toBeVisible();
 });
+
+test("the opening offers a whole first choice without scrolling", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Begin with Recording off" }).click();
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  const first = page.locator("#choices .choice").first();
+  const box = await first.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+  await expect(page.locator("#text")).toContainText("Keep a clear account");
+  if (page.viewportSize()!.width <= 700) {
+    await page.getByText("How Leyla came home", { exact: true }).click();
+  }
+  await expect(page.getByText(/Kemal's coat still hangs/)).toBeVisible();
+  await expect(page.getByText(/Hacer says, "I follow the view/)).toBeVisible();
+});
+
+test("each decision names distinct objects", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Begin with Recording off" }).click();
+  for (let step = 0; step < 12; step++) {
+    const names = await page.locator("#choices .object-name").allTextContents();
+    expect(new Set(names).size).toBe(names.length);
+    if (step === 7) {
+      await expect(page.locator('[data-action="protect"] .object-name')).toHaveText(
+        "The bill to copy",
+      );
+      await expect(page.locator('[data-action="publish"] .object-name')).toHaveText(
+        "The notebook to lend",
+      );
+    }
+    await page.locator("#choices .choice").first().click();
+  }
+});

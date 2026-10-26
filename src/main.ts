@@ -61,8 +61,8 @@ const objects: Record<string, { name: string; shape: string }> = {
   guess: { name: "The telephone", shape: "phone" },
   delegate: { name: "The telephone", shape: "phone" },
   conceal: { name: "The envelope", shape: "envelope" },
-  protect: { name: "The closed notebook", shape: "book" },
-  publish: { name: "The closed notebook", shape: "book" },
+  protect: { name: "The bill to copy", shape: "paper" },
+  publish: { name: "The notebook to lend", shape: "book" },
   name: { name: "The account", shape: "paper" },
   dismiss: { name: "Your savings", shape: "wallet" },
   confirm: { name: "The visit", shape: "envelope" },
@@ -71,18 +71,32 @@ const objects: Record<string, { name: string; shape: string }> = {
   silent: { name: "The front door", shape: "door" },
   close: { name: "The front door", shape: "door" },
 };
+const phoneLayout = window.matchMedia("(max-width: 700px)");
+phoneLayout.addEventListener("change", () => {
+  const context = document.querySelector<HTMLDetailsElement>("#opening-context");
+  if (context) context.open = !phoneLayout.matches;
+});
 function render(focus = false) {
   const current = view(game);
   scene.dataset.outcome = current.outcome;
   get("progress").textContent = current.progress;
   get("title").textContent = current.title;
-  get("text").replaceChildren(
-    ...current.text.map((line) => {
-      const p = document.createElement("p");
-      p.textContent = line;
-      return p;
-    }),
-  );
+  const paragraphs = current.text.map((line) => {
+    const p = document.createElement("p");
+    p.textContent = line;
+    return p;
+  });
+  if (game.step === 0) {
+    const context = document.createElement("details");
+    context.id = "opening-context";
+    context.open = !phoneLayout.matches;
+    const summary = document.createElement("summary");
+    summary.textContent = "How Leyla came home";
+    context.append(summary, ...paragraphs.slice(0, -1));
+    get("text").replaceChildren(context, ...paragraphs.slice(-1));
+  } else {
+    get("text").replaceChildren(...paragraphs);
+  }
   get("room-instruction").textContent =
     current.outcome === "playing"
       ? "Choose an object. Read its action and cost before choosing."

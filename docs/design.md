@@ -24,7 +24,7 @@ Apply both reviews: concrete commitments replace room occupancy; distribute evid
 
 ## Technology and actor engine
 
-Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. Accessible DOM object controls make the room the decision surface. A compact transcript sits beside the room on desktop and precedes the actions on phone. Action labels and consequences remain available without the renderer. Sans-serif type, a green frame, and object silhouettes replace the Georgia text card and two-button stack. This is not a React panel interface. The completed 2026-10-26 technology spike recommends inkjs for narrative and confirms the direct HF bridge and both browser engines. Retain Ink for the story and PixiJS for the room; Godot adds a large mobile load without a benefit for this slice.
+Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. Accessible DOM object controls make the room the decision surface. A compact transcript sits beside the room on desktop and precedes the actions on phone. On the opening phone screen, “How Leyla came home” expands the background; the goal stays visible above the room. The desktop background starts expanded. Action labels and consequences remain available without the renderer. Sans-serif type, a green frame, and object silhouettes replace the Georgia text card and two-button stack. This is not a React panel interface. The completed 2026-10-26 technology spike recommends inkjs for narrative and confirms the direct HF bridge and both browser engines. Retain Ink for the story and PixiJS for the room; Godot adds a large mobile load without a benefit for this slice.
 
 HF 3.2.0 owns Person state, seeded actor choices, body changes, relationships and death news. The host owns the room, evidence and promises. Host choices offer HF affordances and commit actual actor decisions. Fatigue never triggers enableDowned. The first slice uses ordinary fatigue and help instead; a fatigue-capacity request goes to the coordinator. Ink state, HF people, seed and ordered input log belong to the export. Replay compares the complete final state hash.
 
@@ -38,7 +38,7 @@ New foreground: Leyla, 49, lab technician in Rotterdam; Şükrü, 79, retired cu
 
 ## Phone and access
 
-At 360×690, the transcript precedes two object choices within the room at staggered heights. At 1280×800, the compact transcript sits beside the larger room. Both remain in the same scroll. Keyboard operation, visible focus, reduced motion, readable contrast and DOM narration are required. No diagnostic counters appear in ordinary play. The menu includes Resume, Feedback, Full screen, All games, Recording and confirmed New game. Lab-only tools require ?lab=1.
+At 360×690, the opening background starts collapsed in a native disclosure, with the goal and a complete first object choice visible without scrolling. Expanding the disclosure reveals every original line. Later scenes keep their full transcript above two object choices within the room at staggered heights. The custody choice names “The bill to copy” and “The notebook to lend” separately. At 1280×800, the compact transcript sits beside the larger room. Both remain in the same scroll. Keyboard operation, visible focus, reduced motion, readable contrast and DOM narration are required. No diagnostic counters appear in ordinary play. The menu includes Resume, Feedback, Full screen, All games, Recording and confirmed New game. Lab-only tools require ?lab=1.
 
 ## Recording and feedback
 
@@ -52,3 +52,7 @@ Technical delivery ends with independent Codex review, focused replay and outcom
 - 2026-11-03: cross-game identity and fictional-person continuation await shared platform origin admission. This slice starts fresh local actors; it does not claim continuing-person adoption. Central game registration must deploy before feedback receiving is verified.
 - 2026-11-15: fatigue-driven capacity/downing awaits an opt-in HF capability; first slice uses help and rest.
 - 2026-11-15: group-held duty awaits HF review. No funeral quorum or worship stakes will be added.
+
+## Iteration 3 regression scope
+
+The cold player ranked Three Days first, but could not see the first phone choice without scrolling and saw two controls called “The closed notebook”. This iteration changes presentation only. The story, engine, choice IDs, input format and three-days-2 save format stay unchanged. The 160 iteration 2 policy records must match exactly, including every seed, input log, outcome and final hash. Browser checks require the complete first control, including its cost, within 360×690 and 1280×800 in Chromium and WebKit; opening context remains expandable and desktop context starts visible. The recording notice uses player-facing language without a platform-status sentence.

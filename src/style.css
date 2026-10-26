@@ -596,3 +596,22 @@ dialog input[type="checkbox"] {
     font-size: 15px;
   }
 }
+
+#opening-context {
+  margin-bottom: 10px;
+}
+#opening-context summary {
+  cursor: pointer;
+  min-height: 44px;
+  padding: 10px 0;
+  color: var(--rust);
+}
+#opening-context summary:focus-visible {
+  outline: 3px solid #dbad50;
+  outline-offset: 4px;
+}
+@media (min-width: 701px) {
+  #opening-context summary {
+    display: none;
+  }
+}
