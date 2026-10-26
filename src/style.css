@@ -146,13 +146,6 @@ h1 {
 .choice:hover {
   background: #e8d7bd;
 }
-.choice:first-child {
-  background: var(--rust);
-  color: #fff4e4;
-}
-.choice:first-child:hover {
-  background: #743325;
-}
 #consequence {
   color: #6c5148;
   font-size: 16px;

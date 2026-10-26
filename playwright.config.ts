@@ -3,12 +3,17 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false,
   workers: 1,
-  use: { baseURL: "http://127.0.0.1:4179", trace: "retain-on-failure" },
-  webServer: {
-    command: "pnpm dev --port 4179",
-    url: "http://127.0.0.1:4179",
-    reuseExistingServer: !process.env.CI,
+  use: {
+    baseURL: process.env.DAYS_TEST_URL ?? "http://127.0.0.1:4179",
+    trace: "retain-on-failure",
   },
+  webServer: process.env.DAYS_TEST_URL
+    ? undefined
+    : {
+        command: "pnpm dev --port 4179",
+        url: "http://127.0.0.1:4179/@vite/client",
+        reuseExistingServer: !process.env.CI,
+      },
   projects: [
     {
       name: "chromium-phone",

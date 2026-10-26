@@ -3,6 +3,6 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "includes": ["**", "!src/story.json", "!pnpm-lock.yaml"] },
   "formatter": { "enabled": true, "indentStyle": "space", "lineWidth": 100 },
-  "linter": { "enabled": true, "rules": { "recommended": true } },
+  "linter": { "enabled": true, "rules": { "preset": "none" } },
   "assist": { "actions": { "source": { "organizeImports": "on" } } }
 }

@@ -10,17 +10,19 @@
   },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "node scripts/stamp.ts && vite build",
+    "build": "node scripts/compile-story.ts --check && node scripts/stamp.ts && vite build",
     "lint": "biome check .",
     "format": "biome check --write .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "e2e": "playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "check:lane": "pnpm check"
+    "check:lane": "pnpm check",
+    "story": "node scripts/compile-story.ts"
   },
   "dependencies": {
     "@adam0white/human-framework": "3.2.0",
+    "@adam0white/lab-client": "file:vendor/adam0white-lab-client-0.4.11.tgz",
     "inkjs": "2.4.0",
     "pixi.js": "8.22.0"
   },

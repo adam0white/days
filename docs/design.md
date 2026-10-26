@@ -8,7 +8,7 @@ Close the door on the third evening. A win means the disputed account has a name
 
 ## Decisions
 
-A short complete run spans all three days. Each encounter changes the next encounter. Limited time forces choices between checking evidence, asking for help, resting and speaking. A seed changes who holds evidence about the account. Paying a claim before checking it can leave the true creditor unpaid. Publicly reading the notebook can win cooperation while damaging privacy. Asking for help can keep a promise without Leyla doing every task herself. Rest is possible without losing a visitor's compassion. The dead man is never a speaking character. His actions need not vindicate him.
+A short complete run spans all three days. Each encounter changes the next encounter. From the second morning, Leyla has two free stretches around receiving visitors. Rest uses one. Comparing the account uses one. Making the visit uses one unless Selin covers the door, freeing that stretch. Help permits rest plus evidence and the visit; without help, Leyla can save the rest stretch and travel tired. Spending both stretches before an unsupported visit leaves the promise incomplete. Prose states the time remaining and the relevant cost before each choice. Selin uses HF to choose between a short shift and going home. A privacy breach lowers her HF relationship with Leyla and can make her choose home. Limited time forces choices between checking evidence, asking for help, resting and speaking. A seed changes who holds evidence about the account. Paying a claim before checking it can leave the true creditor unpaid. Publicly reading the notebook can win cooperation while damaging privacy. Asking for help can keep a promise without Leyla doing every task herself. Rest is possible without losing a visitor's compassion. The dead man is never a speaking character. His actions need not vindicate him.
 
 The family does not cater for guests. Neighbours bring food. Faith shapes the language people use about care and duty. Any religious claim must cite the committed HF research record. No funeral-prayer count, attendance condition, Isha choice, inheritance allocation or funeral-law subsystem exists. Characters' understandings are attributed to them. Three days are Leyla's leave, not a ruling about grief.
 
@@ -18,13 +18,13 @@ Apply both reviews: concrete commitments replace room occupancy; distribute evid
 
 ## Technology and actor engine
 
-Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. DOM text and choices remain accessible above the illustration. This is not a React panel interface. The techspike report was absent on first read, 2026-10-26; check again before finalizing.
+Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. DOM text and choices remain accessible above the illustration. This is not a React panel interface. The completed 2026-10-26 technology spike recommends inkjs for narrative and confirms the direct HF bridge and both browser engines. Retain Ink for the story and PixiJS for the room; Godot adds a large mobile load without a benefit for this slice.
 
 HF 3.2.0 owns Person state, seeded actor choices, body changes, relationships and death news. The host owns the room, evidence and promises. Host choices offer HF affordances and commit actual actor decisions. Fatigue never triggers enableDowned. The first slice uses ordinary fatigue and help instead; a fatigue-capacity request goes to the coordinator. Ink state, HF people, seed and ordered input log belong to the export. Replay compares the complete final state hash.
 
 ## Cast
 
-New foreground: Leyla, 49, lab technician in Rotterdam; Şükrü, 79, retired customs colleague; Kemal, 74, deceased clerk, present only through objects and other people's accounts. Leyla's divorce does not prove Kemal right. Canonical foreground: Hacer (`hf.cast.hacer.voice`), Burak (`hf.cast.burak.stairwell`), and Danyal (`hf.cast.danyal.well`, Christian, well keeper). Danyal is a former correspondent visiting Istanbul, not assigned religious expertise. Use registry facts and IDs exactly; registry additions record new people's backstory, secrets and possible outcomes. The setting is Kemal's small rented house, not Burak's flat 3.
+New foreground: Leyla, 49, lab technician in Rotterdam; Şükrü, 79, retired customs colleague. Kemal, 74, is a deceased reference, present only through objects and other people's accounts. Leyla's divorce does not prove Kemal right. Canonical foreground: Hacer (`hf.cast.hacer.voice`), Burak (`hf.cast.burak.stairwell`), and Selin (`hf.cast.selin.voice`, office worker, Halil’s daughter). Selin visits through Hacer. Her family and work remain as recorded in the registry. Use registry facts and IDs exactly; registry additions record new people's backstory, secrets and possible outcomes. The setting is Kemal's small rented house, not Burak's flat 3.
 
 ## Phone and access
 
@@ -38,6 +38,7 @@ Use the shared lab client contract, current immutable artifact, first-visit noti
 
 Technical delivery ends with independent Codex review, focused replay and outcome tests, all four browser/viewport combinations, exact green CI, signed main, clean release manifest and live verification. Coordinator accepts readiness for the lab panel; owner accepts game readiness after the panel and retest. Central listing deployment belongs to the coordinator.
 
-- 2026-11-03: owner and panel judgment of story tension and grief language; first slice ships before that review.
+- 2026-11-03: owner and panel judgment of story tension and grief language. Most choices remain an openly sound action versus a damaging action; skipping rest currently carries narrative tiredness, and seeded evidence changes its holder rather than the underlying account. The first slice ships before that review.
+- 2026-11-03: cross-game identity and fictional-person continuation await shared platform origin admission. This slice starts fresh local actors; it does not claim continuing-person adoption. Central game registration must deploy before feedback receiving is verified.
 - 2026-11-15: fatigue-driven capacity/downing awaits an opt-in HF capability; first slice uses help and rest.
 - 2026-11-15: group-held duty awaits HF review. No funeral quorum or worship stakes will be added.
