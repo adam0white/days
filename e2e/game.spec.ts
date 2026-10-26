@@ -136,3 +136,27 @@ test("story and menu work while the renderer waits or fails", async ({ page }) =
     releaseRenderer();
   }
 });
+
+test("room objects expose their action and cost before activation", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Begin with Recording off" }).click();
+  const choices = page.locator("#choices .choice");
+  await expect(choices).toHaveCount(2);
+  await expect(page.locator("#room-status")).toContainText("hours");
+  for (const choice of await choices.all()) {
+    await expect(choice.locator(".object-mark")).toBeVisible();
+    await expect(choice.locator(".action-label")).toBeVisible();
+    await expect(choice.locator(".action-cost")).toBeVisible();
+    await expect(choice).toHaveAccessibleName(/.+/);
+  }
+  const boxes = await choices.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const rect = node.getBoundingClientRect();
+      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+    }),
+  );
+  expect(boxes[0]?.right).toBeLessThanOrEqual(boxes[1]?.left ?? 0);
+  await choices.first().focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "A folded account" })).toBeVisible();
+});

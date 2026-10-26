@@ -3,7 +3,7 @@ import { Application, Container, Graphics } from "pixi.js";
 import "pixi.js/unsafe-eval";
 import type { GameView } from "./types.ts";
 
-/** The illustration carries atmosphere; all story information lives in the DOM. */
+/** The rendered room supports the DOM object controls; the controls also work alone. */
 export async function mountRoom(element: HTMLElement): Promise<{
   update(view: GameView): void;
   destroy(): void;

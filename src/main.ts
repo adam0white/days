@@ -46,6 +46,31 @@ let busy = false;
 function save() {
   store(storageKey, JSON.stringify(exportRun(game)));
 }
+const objects: Record<string, { name: string; shape: string }> = {
+  welcome: { name: "Hacer’s soup", shape: "bowl" },
+  alone: { name: "The front door", shape: "door" },
+  check: { name: "The account", shape: "paper" },
+  pay: { name: "Your savings", shape: "wallet" },
+  private: { name: "The closed notebook", shape: "book" },
+  read: { name: "The open notebook", shape: "paper" },
+  ask: { name: "Selin’s chair", shape: "chair" },
+  hide: { name: "Selin’s way home", shape: "door" },
+  rest: { name: "Soup and a seat", shape: "bowl" },
+  push: { name: "The front door", shape: "door" },
+  compare: { name: "The receipts", shape: "paper" },
+  guess: { name: "The telephone", shape: "phone" },
+  delegate: { name: "The telephone", shape: "phone" },
+  conceal: { name: "The envelope", shape: "envelope" },
+  protect: { name: "The closed notebook", shape: "book" },
+  publish: { name: "The closed notebook", shape: "book" },
+  name: { name: "The account", shape: "paper" },
+  dismiss: { name: "Your savings", shape: "wallet" },
+  confirm: { name: "The visit", shape: "envelope" },
+  leave: { name: "The delivery", shape: "envelope" },
+  speak: { name: "A chair beside Selin", shape: "chair" },
+  silent: { name: "The front door", shape: "door" },
+  close: { name: "The front door", shape: "door" },
+};
 function render(focus = false) {
   const current = view(game);
   scene.dataset.outcome = current.outcome;
@@ -58,12 +83,52 @@ function render(focus = false) {
       return p;
     }),
   );
+  get("room-instruction").textContent =
+    current.outcome === "playing"
+      ? "Choose an object. Read its action and cost before choosing."
+      : "The three days have ended.";
+  get("room-status").replaceChildren(
+    ...[
+      `${current.hours} ${current.hours === 1 ? "hour" : "hours"} free before departure`,
+      current.fatigue >= 4
+        ? "Exhausted"
+        : current.fatigue >= 3
+          ? "Very tired"
+          : current.fatigue >= 2
+            ? "Tired"
+            : "Rested",
+      current.helper ? "Door cover agreed" : "No door cover agreed",
+    ].map((label) => {
+      const item = document.createElement("span");
+      item.textContent = label;
+      return item;
+    }),
+  );
   get("choices").replaceChildren(
     ...current.choices.map((choice) => {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "choice";
-      button.textContent = choice.label;
+      const object = objects[choice.id] ?? { name: "In the room", shape: "paper" };
+      button.dataset.object = object.shape;
+      button.dataset.action = choice.id;
+      const mark = document.createElement("span");
+      mark.className = "object-mark";
+      mark.setAttribute("aria-hidden", "true");
+      const name = document.createElement("span");
+      name.className = "object-name";
+      name.textContent = object.name;
+      name.setAttribute("aria-hidden", "true");
+      const label = document.createElement("span");
+      label.className = "action-label";
+      label.textContent = choice.label;
+      button.append(mark, name, label);
+      if (choice.cost) {
+        const cost = document.createElement("span");
+        cost.className = "action-cost";
+        cost.textContent = choice.cost;
+        button.append(cost);
+      }
       button.addEventListener("click", () => {
         if (busy) return;
         busy = true;
@@ -81,7 +146,7 @@ function render(focus = false) {
   if (current.outcome !== "playing") {
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "choice";
+    button.className = "choice restart-choice";
     button.textContent = "Play another three days";
     button.addEventListener("click", () => {
       home();
@@ -96,8 +161,7 @@ function render(focus = false) {
   if (current.outcome !== "playing") lab.milestone("ending reached");
   if (focus) {
     get("title").focus({ preventScroll: true });
-    if (window.matchMedia("(min-width: 900px)").matches) window.scrollTo(0, 0);
-    else scene.scrollIntoView({ block: "start", behavior: "instant" });
+    scene.scrollIntoView({ block: "start", behavior: "instant" });
   }
 }
 const stopTracking = lab.trackRun(() => exportRun(game), { runKey: () => game.seed });
@@ -254,7 +318,7 @@ window.addEventListener(
   { once: true },
 );
 
-// The room is decorative. Loading it must not delay play or the recording controls.
+// DOM object controls work before the room renderer loads and if graphics fail.
 void import("./room.ts")
   .then(({ mountRoom }) => mountRoom(get("room")))
   .then((illustration) => {

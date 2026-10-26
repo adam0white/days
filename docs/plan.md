@@ -9,3 +9,7 @@
 7. Remove own worktrees and merged branches, close owned browser/server PIDs and record final worktree lists in report.
 
 Review focus: mutated Ink lookahead; hidden worship scoring; malformed exported input; actor choices without consequences; mobile text/choice overflow; feedback receipt failures.
+
+## Iteration 2 — 2026-10-26
+
+Apply Claude's ranked read in `~/code/.lab-scratch/v3/claude-days-read.md`. First add research-cited, attributed faith disagreements. Then replace one-sided options and give time and tiredness consequences. Keep optional personal disclosure, and record public disclosure rather than erasing it. Fix the account prose, self-reference, actor refusal and companion timing. Replace the Georgia card with room object controls. Measure visible-state policies over at least twenty seeds; replay every measured run. Complete one independent Codex review and the faith self-check, browser play at both sizes, exact green CI, clean deployment, manifest verification, board/status/report and cleanup. Acceptance remains coordinator lab readiness and later owner judgment.

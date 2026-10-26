@@ -8,6 +8,7 @@ import {
   type Person,
   perceive,
   random,
+  readPerson,
   restore,
   snapshot,
   TRAIT_KEYS,
@@ -17,10 +18,10 @@ import {
   type Values,
 } from "@adam0white/human-framework";
 import { Story } from "inkjs";
-import compiled from "./story.json";
+import compiled from "./story.json" with { type: "json" };
 import type { GameView, Outcome } from "./types.ts";
 
-const VERSION = "three-days-1";
+const VERSION = "three-days-2";
 const LEYLA = "hf.cast.leyla.days";
 const KEMAL = "hf.cast.kemal.days";
 const SELIN = "hf.cast.selin.voice";
@@ -32,6 +33,13 @@ export interface Game {
   inputs: string[];
   step: number;
   stretches: number;
+  fatigue: number;
+  paid: boolean;
+  paidCreditor: boolean;
+  privacyManaged: boolean;
+  notebookKept: boolean;
+  laterDelivery: boolean;
+  refused: boolean;
   ink: string;
   people: Person[];
   evidenceHolder: string;
@@ -48,7 +56,7 @@ export interface Game {
   outcome: Outcome;
   text: string[];
   title: string;
-  choices: { id: string; label: string }[];
+  choices: { id: string; label: string; cost?: string }[];
 }
 export interface Run {
   version: string;
@@ -146,19 +154,11 @@ function collect(game: Game, story: Story, consequence?: string) {
     if (tags.length !== 1) throw new Error("Each choice must have exactly one action.");
     return { id: required(tags[0]).slice(7).trim(), label: c.text };
   });
-  if (game.step >= 4 && game.step <= 9) {
-    const remaining = ["no", "one", "two"][game.stretches];
-    let time = `Around the door duty, Leyla has ${remaining} free ${game.stretches === 1 ? "stretch" : "stretches"} left before departure.`;
-    if (game.choices.some((c) => c.id === "rest"))
-      time +=
-        " Rest uses one stretch. So does comparing the account. A visit uses one more unless Selin covers the door.";
-    if (game.choices.some((c) => c.id === "compare"))
-      time += " Comparing the account uses one stretch.";
-    if (game.choices.some((c) => c.id === "confirm"))
-      time += game.helper
-        ? " Selin's agreed shift frees the stretch for the visit; it costs no further free time."
-        : " Going yourself uses one stretch. With none left, the visit cannot happen before departure.";
-    game.text.push(time);
+  game.choices = game.choices.map((choice) => ({ ...choice, cost: choiceCost(game, choice.id) }));
+  if (game.choices.length) {
+    game.text.push(
+      `Leyla has ${game.stretches} free ${game.stretches === 1 ? "hour" : "hours"} before departure. These are hours left after receiving visitors. ${tiredness(game) >= 4 ? "Leyla is exhausted: checking and travel each need an extra hour." : tiredness(game) >= 3 ? "Leyla is very tired: checking needs an extra hour with a second reader." : tiredness(game) >= 2 ? "Leyla is tired, but can still follow the papers." : "Leyla can follow the papers without a second reader."}`,
+    );
   }
 }
 export function createGame(seed: number): Game {
@@ -170,7 +170,14 @@ export function createGame(seed: number): Game {
     seed,
     inputs: [],
     step: 0,
-    stretches: 2,
+    stretches: 6,
+    fatigue: 2 + Math.floor(random(rng) * 2),
+    paid: false,
+    paidCreditor: false,
+    privacyManaged: true,
+    notebookKept: true,
+    laterDelivery: false,
+    refused: false,
     ink: "",
     people: opening(seed),
     evidenceHolder: required(["Hacer", "Burak", "Selin"][Math.floor(random(rng) * 3)]),
@@ -217,13 +224,20 @@ function act(person: Person, action: string, rest = false, companion?: string): 
   return true;
 }
 function requestHelp(game: Game): boolean {
+  // An open, fed household needs less work from Selin. Quieting the immediate
+  // payment demand makes the agreed shift easier, even when that payment was mistaken.
+  const shiftEffort =
+    0.07 +
+    (game.inputs.includes("welcome") ? 0 : 0.07) +
+    (game.paid ? -0.04 : 0.03) +
+    (tiredness(game) >= 3 ? 0.02 : 0);
   const selin = required(game.people[3]);
   const assist: Affordance = {
     id: "cover",
     action: "help",
     label: "Cover the door for an agreed short shift",
     duration: 20,
-    effort: 0.1,
+    effort: shiftEffort,
     advertises: { belonging: 0.25, esteem: 0.15 },
     with: [LEYLA],
     tags: ["help", "social"],
@@ -250,28 +264,87 @@ function requestHelp(game: Game): boolean {
   });
   return offer.id === "cover";
 }
+function tiredness(game: Game): number {
+  // The authored scene demand and HF's bodily readout can each require more care.
+  return Math.min(
+    5,
+    Math.max(game.fatigue, Math.floor(readPerson(required(game.people[0])).body.fatigue * 4)),
+  );
+}
+function comparisonHours(game: Game, remote = false): number {
+  const original = remote ? 2 : game.checked ? 1 : 2;
+  return (
+    Math.max(0, original - (!remote && !game.privacy ? 1 : 0)) + (tiredness(game) >= 3 ? 1 : 0)
+  );
+}
+function journeyHours(game: Game): number {
+  return (game.helper ? 1 : 2) + (tiredness(game) >= 4 ? 1 : 0);
+}
+function choiceCost(game: Game, id: string): string {
+  const costs: Record<string, string> = {
+    welcome: "1 hour; feel steadier while someone else receives the visitors.",
+    alone: "Save the hour and keep control of the door; become more tired.",
+    check: "1 hour to get the original; keep your savings.",
+    pay: "Use your savings to quiet the demand now; recovering the original later takes another hour.",
+    private: "Keep the private page closed; no early help with the entries.",
+    read: "Get help that saves 1 checking hour; expose a private story. Containing the harm later takes 1 hour.",
+    ask: "Ask Selin to give up part of her evening; she may refuse.",
+    hide: "Protect Selin's evening; a visit without cover takes 2 hours.",
+    rest: "1 hour to recover enough to read; fewer visitors can be received.",
+    push: "Save the hour; become more tired, which can add a checking or travel hour.",
+    compare: `${comparisonHours(game)} ${comparisonHours(game) === 1 ? "hour" : "hours"} to obtain and check the original; no time to recuperate.`,
+    guess: `${comparisonHours(game, true)} ${comparisonHours(game, true) === 1 ? "hour" : "hours"} for Burak's phone check; rest while he calls.`,
+    delegate: "Commit to a visit before departure; reserve the journey time.",
+    conceal: "Accept a later delivery; give up seeing Şükrü during this leave.",
+    protect: "1 hour; keep the notebook, copy the bill, and answer questions yourself.",
+    publish: `Save 1 hour; entrust the closed notebook to Burak until after departure.${game.privacy ? " The private page stays closed." : " Earlier disclosure stays unresolved."}`,
+    name: "1 hour to write and agree the next step; preserve your savings.",
+    dismiss: "Pay the verified bill from your own savings; save the writing hour.",
+    confirm: `${journeyHours(game)} ${journeyHours(game) === 1 ? "hour" : "hours"} for the visit${game.laterDelivery ? "; change the later arrangement" : ""}; travel while carrying your remaining tiredness.`,
+    leave: "1 hour and a paid delivery; give up making the visit yourself.",
+    speak: "Ask Selin to stay and listen; the conversation tires you.",
+    silent: "Keep your words private and recover in quiet; leave the conversation unfinished.",
+    close: "End this leave; carry any unfinished task home.",
+  };
+  return required(costs[id]);
+}
+function spend(game: Game, hours: number): boolean {
+  if (game.stretches < hours) return false;
+  game.stretches -= hours;
+  return true;
+}
 function apply(game: Game, id: string): string {
   const leyla = required(game.people[0]);
-  // Player intent is offered to the actor. HF owns refusal, activity, body and social effects.
-  const completed = act(leyla, id, id === "rest" || id === "welcome", SELIN);
-  if (!completed && id !== "close")
-    return "Leyla cannot take that on now. The conversation moves on without an agreement.";
+  // Only offer companionship when a person is actually present for this act.
+  const companion = ["private", "read", "ask", "speak", "silent"].includes(id) ? SELIN : undefined;
+  const completed = act(leyla, id, id === "rest" || id === "welcome", companion);
+  game.refused = !completed && id !== "close";
+  if (game.refused) {
+    tick(leyla, leyla.now + 20);
+    return "Leyla cannot take that on now. No agreement or task has been completed. The choice is still here; she pauses before trying again.";
+  }
   switch (id) {
     case "welcome":
-      return "Hacer sets down the soup. Leyla eats before answering the next knock.";
+      if (!spend(game, 1))
+        return "There is no free hour for the meal. Hacer leaves the soup for later.";
+      game.fatigue = Math.max(0, game.fatigue - 2);
+      return "Hacer brings the soup inside. Leyla eats and feels steadier. Receiving her takes an hour that could have gone to the papers.";
     case "alone":
-      return "Hacer leaves the soup by the door. Leyla stays standing.";
+      game.fatigue = Math.min(5, game.fatigue + 1);
+      return "Hacer leaves the soup by the door. Leyla saves an hour and keeps control of the visitors. Standing through it leaves her more tired.";
     case "check":
-      game.checked = true;
-      return game.evidenceHolder === "Burak"
-        ? "Burak holds the claim open and goes to find his original receipt. No money changes hands."
-        : `Burak holds the claim open and asks ${game.evidenceHolder} for the original receipt. No money changes hands.`;
+      game.checked = spend(game, 1);
+      return game.checked
+        ? `${game.evidenceHolder === "Burak" ? "Burak fetches his" : `${game.evidenceHolder} agrees to bring the`} original receipt. It takes an hour. No money changes hands.`
+        : "There is no free hour to obtain the original. The copied entry remains unconfirmed.";
     case "pay":
-      return "Burak accepts the offered money but cannot certify the claim. A voluntary payment has not identified the creditor.";
+      game.paid = true;
+      return "Burak accepts Leyla's money against the first demand and Şükrü stops asking for an immediate payment. Her savings are smaller. That payment was recorded against Burak's old advance; the boiler bill still needs its own check. Burak must return the mistaken payment.";
     case "private":
-      return "Selin turns the private page face down. She stays beside you without asking for its contents.";
+      return "Selin turns the private page face down. Trust is preserved, but the room cannot help sort the entries yet. Leyla will need time to check them.";
     case "read":
       game.privacy = false;
+      game.privacyManaged = false;
       perceive(required(game.people[3]), [
         {
           at: required(game.people[3]).now,
@@ -284,83 +357,94 @@ function apply(game: Game, id: string): string {
           summary: "Leyla read a private hospital page aloud without permission.",
         },
       ]);
-      return "The room hears a private hospital name. Selin pulls her chair back. That disclosure cannot be taken back.";
+      return "Hacer recognises the dates and offers to sort the entries with Burak. That saves one checking hour. The room has also heard a private hospital name. Selin pulls her chair back. Containing the disclosure will take an hour; it cannot make people unhear it.";
     case "ask":
       game.asked = true;
       game.helper = requestHelp(game);
       return game.helper
-        ? "Selin agrees to one short shift, after work. Hacer will bring food. The arrangement has limits."
-        : "Selin decides to go home. She cannot cover the door. You will need to close it for a visit yourself.";
+        ? "Selin agrees to one short shift. It costs her an evening at home. Leyla still needs an hour for the visit itself."
+        : "Selin decides to go home. She cannot cover the door. A visit will take two hours, or Leyla can pay for an agreed delivery.";
     case "hide":
-      return "Nobody knows the envelope needs a visit. Nobody can agree to take it.";
+      return "Selin keeps her evening at home. Leyla will have no cover from her. She can still agree a visit or a later delivery with Şükrü.";
     case "rest":
-      if (game.stretches === 0) return "There is no free stretch left for the planned rest.";
-      game.stretches--;
+      if (!spend(game, 1)) return "There is no free hour left for the planned rest.";
+      game.fatigue = Math.max(0, game.fatigue - 3);
       game.rested = true;
-      return "Leyla eats, lies down and leaves the door covered or closed. The visitors can wait.";
+      return "Leyla eats and lies down for an hour. The door stays closed or covered. She can follow the papers again, but that hour is gone.";
     case "push":
-      return "Leyla stays up. The papers are harder to follow. She saves the stretch she would have spent resting.";
+      game.fatigue = Math.min(5, game.fatigue + 2);
+      return "Leyla stays at the door and saves an hour. Her tiredness rises. A second reader may now take longer, even if Selin covers the visit.";
     case "compare":
-      if (game.stretches === 0)
-        return "There is no free stretch left to compare the papers. The account remains unconfirmed.";
-      game.stretches--;
-      game.compared = game.checked;
-      return game.compared
-        ? "The receipt and the two entries now agree: Burak received his advance back; Şükrü still has a separate claim."
-        : "Without the original check, the copied receipt cannot settle the disputed entry. Burak marks it unconfirmed.";
-    case "guess":
-      return "The crossed-out entry is treated as a settlement. Şükrü has not agreed to that account.";
+    case "guess": {
+      const hours = comparisonHours(game, id === "guess");
+      if (!spend(game, hours))
+        return `The check needs ${hours} ${hours === 1 ? "hour" : "hours"}; only ${game.stretches} remain. Leyla cannot safely confirm the entries before departure.`;
+      game.checked = true;
+      game.compared = true;
+      if (id === "guess") game.fatigue = Math.max(0, game.fatigue - 1);
+      return `The original receipt and both entries agree: Burak's earlier advance was returned; Şükrü's boiler bill is separate. The check takes ${hours} ${hours === 1 ? "hour" : "hours"}.${id === "guess" ? " Burak does the phone work while Leyla rests her eyes." : " Leyla keeps working through the papers."}${game.paid ? " Burak acknowledges that Leyla's mistaken payment must be returned to her savings." : ""}`;
+    }
     case "delegate":
       game.visit = true;
-      return game.helper
-        ? "Şükrü agrees that Selin will cover the door while Leyla visits tomorrow."
-        : "Leyla tells Şükrü she will close the door and come herself. He agrees to tomorrow. Without cover, the journey will use one free stretch.";
+      return "Şükrü agrees to a visit before departure. Leyla now owes him the time she has named. The photograph and letter are ready.";
     case "conceal":
-      return "The envelope goes back in the drawer. Şükrü receives no explanation.";
-    case "protect":
-      return "Hacer accepts the closed page. Burak takes only the bill. The hospital story stays with the person it concerns.";
+      game.visit = true;
+      game.laterDelivery = true;
+      return "Şükrü agrees that Burak may bring the photograph and letter after Leyla leaves. He is disappointed not to see her. The later delivery still needs a named person, payment and a date.";
+    case "protect": {
+      const hours = 1;
+      if (!spend(game, hours))
+        return "There is no hour left to copy the bill and answer the questions. Any earlier disclosure is still unanswered.";
+      game.privacyManaged = true;
+      return game.privacy
+        ? "Leyla spends an hour copying only the bill and answering questions without sharing the private page. Burak takes the copy. Leyla keeps the notebook."
+        : "Leyla contacts the person whose page she read, apologises, and asks the listeners not to repeat it. They agree. It takes an hour. The disclosure happened; this agreement limits further harm without undoing it.";
+    }
     case "publish":
-      game.privacy = false;
-      return "The page moves around the room. The account is still a separate question. The private story is now beyond your control.";
+      game.notebookKept = false;
+      return "Burak takes the closed notebook to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later. This does not answer any earlier disclosure.";
     case "name":
-      game.named = game.checked && game.compared;
+      game.named = game.compared && spend(game, 1);
       return game.named
-        ? "Şükrü confirms the open bill. Burak accepts the job of sending a corrected statement to the estate contact. Leyla keeps both names and the next step."
-        : "Şükrü gives his name, but the conflicting entries have not been checked. Burak cannot sign a corrected statement.";
+        ? "Leyla spends an hour recording Şükrü's claim and Burak's agreed next step with the estate contact. She keeps her savings and accepts that this follow-up will continue after leave."
+        : "The account cannot be recorded safely: either the entries are unconfirmed or no writing hour remains.";
     case "dismiss":
-      return "Şükrü says he has not been paid. The account leaves the room disputed.";
+      game.named = game.compared;
+      game.paidCreditor = game.named;
+      return game.named
+        ? "Şükrü confirms receipt of Leyla's voluntary payment for the verified boiler bill. The account is clear now, at the cost of her own savings. Burak still owes her any mistaken earlier payment."
+        : "Without the checked entries, Leyla cannot safely pay the boiler bill. The account remains disputed.";
     case "confirm": {
-      game.confirmed = game.visit && (game.helper || game.stretches > 0);
-      if (game.confirmed && !game.helper) game.stretches--;
-      const fatigue = game.rested
-        ? ""
-        : " Leyla makes the journey tired; she will need rest after it.";
+      const hours = journeyHours(game);
+      game.confirmed = game.visit && spend(game, hours);
       return game.confirmed
-        ? "The visit happens." +
-            fatigue +
-            " Şükrü receives the photograph and letter. He says Kemal also failed to return a borrowed folding table. Leyla records the neighbour to contact; she does not excuse him."
-        : game.visit && !game.helper && game.stretches === 0
-          ? "There is no free stretch left for the visit before departure. Şükrü is still waiting. Leyla must arrange a later answer; this promise is not complete."
-          : "The visit has no workable arrangement. Şükrü is still waiting for a person and a time.";
+        ? `The visit happens and uses ${hours} ${hours === 1 ? "hour" : "hours"}.${tiredness(game) >= 3 ? " Leyla is tired; she keeps the visit short and rests before returning." : " Leyla has enough strength to stay awhile."} Şükrü receives the photograph and letter. He also names a borrowed folding table that Kemal never returned. Leyla records whom to contact; she does not excuse him.`
+        : `The visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${game.stretches} remain. Şükrü is still waiting. This promise needs an agreed delivery or a later answer.`;
     }
     case "leave":
-      return "The envelope stays in the drawer. The promised visit has not happened or been handed on.";
+      game.confirmed = game.visit && spend(game, 1);
+      return game.confirmed
+        ? "Leyla spends an hour arranging and paying for Burak to deliver the photograph and letter. Şükrü agrees to the date and Burak accepts the task. Leyla gives up the visit herself; the handoff is agreed, and the later delivery is still to happen."
+        : "No paid delivery can be confirmed without Şükrü's agreement and an hour to arrange it. The envelope leaves with Leyla.";
     case "speak":
       game.spoken = true;
-      return "Selin listens. Leyla says that her marriage ended and she wanted to tell Kemal. Selin does not turn it into a lesson.";
+      game.fatigue = Math.min(5, game.fatigue + 1);
+      return "Selin stays to listen. Leyla says that her marriage ended and she wanted to tell Kemal. The conversation costs them both energy. Selin does not turn it into a lesson.";
     case "silent":
-      return "Selin does not press. Leyla leaves that part of the conversation unsaid.";
+      game.fatigue = Math.max(0, game.fatigue - 1);
+      return "Selin does not press. Leyla keeps that part of her life private and rests beside her. The conversation remains unfinished; the account and the envelope do not require it.";
     case "close": {
-      game.outcome = game.named && game.confirmed && game.privacy && game.spoken ? "won" : "lost";
+      game.outcome =
+        game.named && game.confirmed && (game.privacy || game.privacyManaged) ? "won" : "lost";
+      const history = `${!game.privacy ? (game.privacyManaged ? " A private page was read aloud. The agreement to limit its spread does not undo that harm." : " A private page was read aloud. Nobody has addressed the harm.") : " The private page stayed private."}${!game.notebookKept ? " Burak still has the notebook and owes its return." : ""}${game.paid ? " Burak still owes the mistaken first payment back to Leyla." : ""}`;
       if (game.outcome === "won")
-        return "You leave with a checked account and a named next step. The visit was kept. You spoke to Selin without giving away someone else’s privacy. These tasks are complete; grief is not.";
+        return `You leave with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
       const missing = [
         !game.named ? "the account is still disputed" : "",
-        !game.confirmed ? "the promised visit is still unanswered" : "",
-        !game.privacy ? "someone else’s private story was exposed" : "",
-        !game.spoken ? "you left without speaking to a witness" : "",
+        !game.confirmed ? "the promised visit or delivery is still unanswered" : "",
+        !game.privacy && !game.privacyManaged ? "the disclosure has not been addressed" : "",
       ].filter(Boolean);
-      return `You close the door, but ${missing.join("; ")}. These consequences go with you. There is still work to do after your leave.`;
+      return `You close the door, but ${missing.join("; ")}. There is still work to do after your leave.${history}`;
     }
     default:
       throw new Error("Unknown action.");
@@ -381,13 +465,26 @@ export function choose(input: Game, id: string): Game {
   const consequence = apply(game, id);
   game.people = game.people.map((p) => snapshot(p));
   game.inputs.push(id);
-  game.step++;
-  story.ChooseChoiceIndex(index);
-  collect(game, story, consequence);
+  if (game.refused) {
+    game.text = [
+      consequence,
+      ...input.text.filter((line) => !line.startsWith("Leyla cannot take that on")),
+    ];
+  } else {
+    game.step++;
+    story.ChooseChoiceIndex(index);
+    collect(game, story, consequence);
+  }
   return game;
 }
 export function view(game: Game): GameView {
   return {
+    hours: game.stretches,
+    fatigue: tiredness(game),
+    helper: game.helper,
+    disclosed: !game.privacy,
+    privacyManaged: game.privacyManaged,
+    paid: game.paid || game.paidCreditor,
     day: Math.min(3, Math.floor(game.step / 4) + 1),
     title: game.title,
     text: [...game.text],
@@ -436,7 +533,7 @@ export function replay(input: Run): Game {
     !input ||
     input.version !== VERSION ||
     !Array.isArray(input.inputs) ||
-    input.inputs.length > 12 ||
+    input.inputs.length > 64 ||
     !input.state ||
     typeof input.hash !== "string"
   )

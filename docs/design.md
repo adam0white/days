@@ -4,13 +4,19 @@ A daughter keeps the condolence door open. Kemal died before Leyla could tell hi
 
 ## What ends the run
 
-Close the door on the third evening. A win means the disputed account has a named resolution, Kemal's promised visit has been kept or honestly handed to someone, and Leyla has spoken to a witness without trading away another person's privacy. An unresolved account or a promise concealed until departure gives a loss with specific human consequences. Grief never ends on a timer. A full room is not a goal. Neither worship nor divine acceptance is measured.
+Close the door on the third evening. A win means the disputed account has a named resolution, Kemal's promised visit has been kept or honestly handed to someone, and Leyla has protected private information or taken responsibility for an earlier disclosure. Speaking about her marriage is optional. An unresolved account or a promise concealed until departure gives a loss with specific human consequences. Grief never ends on a timer. A full room is not a goal. Neither worship nor divine acceptance is measured.
 
 ## Decisions
 
-A short complete run spans all three days. Each encounter changes the next encounter. From the second morning, Leyla has two free stretches around receiving visitors. Rest uses one. Comparing the account uses one. Making the visit uses one unless Selin covers the door, freeing that stretch. Help permits rest plus evidence and the visit; without help, Leyla can save the rest stretch and travel tired. Spending both stretches before an unsupported visit leaves the promise incomplete. Prose states the time remaining and the relevant cost before each choice. Selin uses HF to choose between a short shift and going home. A privacy breach lowers her HF relationship with Leyla and can make her choose home. Limited time forces choices between checking evidence, asking for help, resting and speaking. A seed changes who holds evidence about the account. Paying a claim before checking it can leave the true creditor unpaid. Publicly reading the notebook can win cooperation while damaging privacy. Asking for help can keep a promise without Leyla doing every task herself. Rest is possible without losing a visitor's compassion. The dead man is never a speaking character. His actions need not vindicate him.
+A short complete run spans all three days. Leyla has six hours available for the account, rest and the journey, after travel and the other visitors. Time is a planning budget, not a religious deadline. Eating with Hacer spends an hour and reduces tiredness; keeping the door saves that hour and makes Leyla more tired. Checking the original receipt costs time. Paying the first claim buys quiet but spends Leyla's savings on the wrong repair; the boiler bill still needs checking. A public reading gets people to help find the account details but exposes a private hospital name. It can save time, and it leaves a harm that later containment cannot erase.
 
-The family does not cater for guests. Neighbours bring food. Faith shapes the language people use about care and duty. Any religious claim must cite the committed HF research record. No funeral-prayer count, attendance condition, Isha choice, inheritance allocation or funeral-law subsystem exists. Characters' understandings are attributed to them. Three days are Leyla's leave, not a ruling about grief.
+Rest costs an hour. Pushing on increases tiredness. A tired comparison needs another reader and an extra hour; a tired journey takes longer. These costs apply whether Selin helps or not. Selin uses HF to choose between an agreed shift and going home. Food, the disputed bill, disclosure, and Leyla's condition affect the social situation before she decides. A refusal leaves a slower solo journey or a paid delivery possible. No choice assumes her presence before she arrives.
+
+The account can be checked together or by Burak on the phone. Leyla can spend an hour keeping custody of the private notebook, copying the bill and handling questions herself. Lending the closed notebook to Burak saves that hour, but she leaves without the original. She can ask Burak to write a corrected account at a cost in time, or pay the confirmed bill herself at a cost to her savings. She can visit Şükrü or pay for an agreed delivery and lose the personal visit. Asking to visit later is explicit with Şükrü; silence never counts as a completed promise. Speaking to Selin keeps her from her household longer; keeping the words private lets her leave. Either can end in a win. The last action closes the run and reports the commitments that remain.
+
+The first visible option is not a reliable winning policy. The headless policy probe measures at least twenty seeds. The careful policy uses visible time, tiredness and help to plan; it cannot read hidden seed facts. First-button and careless policies are measured separately. The dead man is never a speaking character. His actions need not vindicate him.
+
+The family does not cater for guests. Neighbours bring food. Faith creates a disagreement among the living. Hacer links bringing soup to the Ja'far report and permits sitting for condolences without burdening the family. Şükrü holds the contrary reading about gatherings and fears the transmitted debt warning. Burak follows the once-only condolence reading while returning to help with the account. Selin separates her own continuing grief from formal mourning. Each religious line has a source comment naming a row in the committed `human-framework/research/janazah-and-taziyah-sources.md`. These are held understandings, not narration. The engine models no condition of Kemal after death. Any religious claim must cite the committed HF research record. No funeral-prayer count, attendance condition, Isha choice, inheritance allocation or funeral-law subsystem exists. Characters' understandings are attributed to them. Three days are Leyla's leave, not a ruling about grief.
 
 ## Reviews and choices
 
@@ -18,9 +24,13 @@ Apply both reviews: concrete commitments replace room occupancy; distribute evid
 
 ## Technology and actor engine
 
-Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. DOM text and choices remain accessible above the illustration. This is not a React panel interface. The completed 2026-10-26 technology spike recommends inkjs for narrative and confirms the direct HF bridge and both browser engines. Retain Ink for the story and PixiJS for the room; Godot adds a large mobile load without a benefit for this slice.
+Ink through inkjs authors the encounters; PixiJS 8 draws one room with paper textures, a doorway, a vacant chair and changing daylight. Accessible DOM object controls make the room the decision surface. A compact transcript sits beside the room on desktop and precedes the actions on phone. Action labels and consequences remain available without the renderer. Sans-serif type, a green frame, and object silhouettes replace the Georgia text card and two-button stack. This is not a React panel interface. The completed 2026-10-26 technology spike recommends inkjs for narrative and confirms the direct HF bridge and both browser engines. Retain Ink for the story and PixiJS for the room; Godot adds a large mobile load without a benefit for this slice.
 
 HF 3.2.0 owns Person state, seeded actor choices, body changes, relationships and death news. The host owns the room, evidence and promises. Host choices offer HF affordances and commit actual actor decisions. Fatigue never triggers enableDowned. The first slice uses ordinary fatigue and help instead; a fatigue-capacity request goes to the coordinator. Ink state, HF people, seed and ordered input log belong to the export. Replay compares the complete final state hash.
+
+## Iteration 2 measurement
+
+The headless probe runs five policies over seeds 0–31. Careful play uses visible tiredness, time and cover. It wins 32/32 runs. Choosing the first displayed button wins 0/32; careless play wins 0/32. Reading with later containment wins 32/32. Paying the mistaken first demand and recovering the original later wins 32/32. Every one of the 160 exports replays to its final hash. The complete seed, input and state evidence is in the delivery report. These scripted policies test mechanical outcomes; they do not predict human win rates.
 
 ## Cast
 
@@ -28,7 +38,7 @@ New foreground: Leyla, 49, lab technician in Rotterdam; Şükrü, 79, retired cu
 
 ## Phone and access
 
-At 360×690, the room occupies the upper third. The scene and two or three large choices follow in a single scrolling column. At 1280×800, the room and the written encounter share the doorway composition. Keyboard operation, visible focus, reduced motion, readable contrast and DOM narration are required. No diagnostic counters appear in ordinary play. The menu includes Resume, Feedback, Full screen, All games, Recording and confirmed New game. Lab-only tools require ?lab=1.
+At 360×690, the transcript precedes two object choices within the room at staggered heights. At 1280×800, the compact transcript sits beside the larger room. Both remain in the same scroll. Keyboard operation, visible focus, reduced motion, readable contrast and DOM narration are required. No diagnostic counters appear in ordinary play. The menu includes Resume, Feedback, Full screen, All games, Recording and confirmed New game. Lab-only tools require ?lab=1.
 
 ## Recording and feedback
 
@@ -38,7 +48,7 @@ Use the shared lab client contract, current immutable artifact, first-visit noti
 
 Technical delivery ends with independent Codex review, focused replay and outcome tests, all four browser/viewport combinations, exact green CI, signed main, clean release manifest and live verification. Coordinator accepts readiness for the lab panel; owner accepts game readiness after the panel and retest. Central listing deployment belongs to the coordinator.
 
-- 2026-11-03: owner and panel judgment of story tension and grief language. Most choices remain an openly sound action versus a damaging action; skipping rest currently carries narrative tiredness, and seeded evidence changes its holder rather than the underlying account. The first slice ships before that review.
+- 2026-11-03: owner and panel judgment of story tension and grief language. Iteration 2 replaces sound-versus-damaging choices with explicit costs and gives fatigue and time mechanical effects. The panel still judges whether those trade-offs feel tense; automated policy results do not establish taste acceptance.
 - 2026-11-03: cross-game identity and fictional-person continuation await shared platform origin admission. This slice starts fresh local actors; it does not claim continuing-person adoption. Central game registration must deploy before feedback receiving is verified.
 - 2026-11-15: fatigue-driven capacity/downing awaits an opt-in HF capability; first slice uses help and rest.
 - 2026-11-15: group-held duty awaits HF review. No funeral quorum or worship stakes will be added.

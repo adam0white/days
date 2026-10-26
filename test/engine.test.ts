@@ -6,7 +6,7 @@ const win = [
   "check",
   "private",
   "ask",
-  "rest",
+  "push",
   "compare",
   "delegate",
   "protect",
@@ -45,7 +45,7 @@ describe("Three Days complete runs", () => {
   it("has a loss that names the unresolved obligations", () => {
     const game = play(42, loss);
     expect(view(game).outcome).toBe("lost");
-    expect(view(game).text.join(" ")).toMatch(/account|promise/);
+    expect(view(game).text.join(" ")).toMatch(/account|promise|disclosure/);
   });
   it("distributes evidence between living people by seed", () => {
     expect(
@@ -70,7 +70,7 @@ describe("Three Days complete runs", () => {
   });
 });
 
-it("two stretches permit help plus rest or an unsupported visit without rest", () => {
+it("cover preserves a visit hour but never makes travel free", () => {
   const withHelp = play(42, [
     "welcome",
     "check",
@@ -120,7 +120,11 @@ it("two stretches permit help plus rest or an unsupported visit without rest", (
   ).toBe(true);
   expect(view(withHelp).outcome).toBe("won");
   expect(view(rested).outcome).toBe("lost");
-  expect(view(unsupported).outcome).toBe("won");
+  expect(view(unsupported).outcome).toBe("lost");
+  const courier = [...win];
+  courier[3] = "hide";
+  courier[9] = "leave";
+  expect(play(42, courier).outcome).toBe("won");
   expect(view(rested).text.join(" ")).toContain("promised visit");
 });
 
@@ -163,11 +167,9 @@ it("keeps the last door closed and offers no choices after either ending", () =>
   }
 });
 
-it("keeps checked evidence, privacy, a visit and a witness necessary for a win", () => {
+it("allows costly alternatives and does not require Leyla to disclose her grief", () => {
   for (const [index, alternative] of [
     [1, "pay"],
-    [2, "read"],
-    [5, "guess"],
     [6, "conceal"],
     [7, "publish"],
     [8, "dismiss"],
@@ -176,7 +178,7 @@ it("keeps checked evidence, privacy, a visit and a witness necessary for a win",
   ] as const) {
     const inputs = [...win];
     inputs[index] = alternative;
-    expect(play(42, inputs).outcome).toBe("lost");
+    expect(play(42, inputs).outcome).toBe("won");
   }
 });
 
@@ -188,19 +190,19 @@ it("HF chooses home after the privacy breach and its choice removes cover", () =
   expect(harmed.people[3]?.trace.at(-1)?.chosenAffordanceId).toBe("home");
 });
 
-it("shows stretch costs before a choice and never spends below zero", () => {
+it("shows hour costs before a choice and never spends below zero", () => {
   let game = play(42, ["welcome", "check", "private", "hide"]);
-  expect(view(game).text.join(" ")).toContain("two free stretches");
+  expect(view(game).text.join(" ")).toContain("4 free hours");
   game = choose(game, "rest");
-  expect(game.stretches).toBe(1);
-  expect(view(game).text.join(" ")).toContain("Comparing the account uses one");
+  expect(game.stretches).toBe(3);
+  expect(view(game).choices.find((c) => c.id === "compare")?.cost).toContain("1 hour");
   game = choose(game, "compare");
-  expect(game.stretches).toBe(0);
+  expect(game.stretches).toBe(2);
   for (const id of ["delegate", "protect", "name"]) game = choose(game, id);
-  expect(view(game).text.join(" ")).toContain("no free stretches");
+  expect(view(game).text.join(" ")).toContain("0 free hours");
   game = choose(game, "confirm");
   expect(game.confirmed).toBe(false);
   expect(game.stretches).toBe(0);
-  expect(view(game).text.join(" ")).toContain("no free stretch");
+  expect(view(game).text.join(" ")).toContain("visit needs 2 hours");
   expect(hashGame(replay(exportRun(game)))).toBe(hashGame(game));
 });
