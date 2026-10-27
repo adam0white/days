@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => {
 test("a complete run, menu and lab tools fit this screen", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/?lab=1");
+  await page.goto("/");
   await page.getByRole("button", { name: "Begin the three days" }).click();
   await expect(page.locator("#scene")).toBeVisible();
   for (
@@ -25,6 +25,8 @@ test("a complete run, menu and lab tools fit this screen", async ({ page }) => {
   await page.getByRole("button", { name: "Menu", exact: true }).click();
   await page.getByRole("button", { name: "Export this play" }).click();
   await expect(page.locator("#export-data")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Download play" })).toBeVisible();
+  await page.getByText("Debug", { exact: true }).click();
   await page.getByRole("button", { name: "Check replay" }).click();
   await expect(page.locator("#lab-status")).toContainText("matches");
   expect(errors).toEqual([]);
@@ -50,11 +52,17 @@ test("feedback selection sends nothing and errors remain visible", async ({ page
   await expect(page.getByLabel("Your feedback")).toHaveValue("I'm confused");
 });
 
-test("ordinary play hides diagnostics and recording has one switch", async ({ page }) => {
+test("ordinary play offers export and collapses diagnostics; recording has one switch", async ({
+  page,
+}) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Begin the three days" }).click();
   await page.getByRole("button", { name: "Menu", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Export this play" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Export this play" })).toBeVisible();
+  await expect(page.locator("#debug")).not.toHaveAttribute("open", "");
+  const privacy = await page.getByRole("link", { name: "Lab privacy", exact: true }).boundingBox();
+  const debug = await page.locator("#debug summary").boundingBox();
+  expect(Math.abs(privacy!.y - debug!.y)).toBeLessThan(10);
   const recording = page.getByRole("checkbox", { name: "Recording" });
   await recording.uncheck();
   await expect(recording).not.toBeChecked();
@@ -162,6 +170,14 @@ test("room objects expose their action and cost before activation", async ({ pag
 });
 
 test("the opening offers a whole first choice without scrolling", async ({ page }) => {
+  // Seed 0 has the longer, very-tired opening. Keep the viewport check on that case.
+  await page.addInitScript(() => {
+    const random = crypto.getRandomValues.bind(crypto);
+    Object.defineProperty(crypto, "getRandomValues", {
+      value: (array: Uint32Array<ArrayBuffer>) =>
+        array instanceof Uint32Array && array.length === 1 ? array.fill(0) : random(array),
+    });
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "Begin with Recording off" }).click();
   expect(await page.evaluate(() => window.scrollY)).toBe(0);

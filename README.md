@@ -19,6 +19,6 @@ pnpm e2e
 
 After changing `src/story.ink`, run `pnpm story` and commit the Ink source and compiled JSON. The build rejects a stale compiled story.
 
-`?lab=1` adds export and replay checks to Menu. Export includes the original seed, ordered input log, final Ink state, the HF 4.0 run archive and final hash. Replay re-runs both the Ink story and HF, and HF checks its own archive. Saves and exports from the earlier HF 3.2 build are refused with a start-fresh message. Recording can be turned off in Menu. Feedback sends only when submitted.
+Menu offers playtest export and download to everyone. Replay checks sit in the initially collapsed Debug item beside Lab privacy. Export includes the original seed, ordered input log, final Ink state, the HF 4.0 run archive and final hash. Replay re-runs both the Ink story and HF, and HF checks its own archive. Saves and exports from the earlier HF 3.2 build are refused with a start-fresh message. Recording can be turned off in Menu. Feedback sends only when submitted.
 
 Code is MIT. Religious source records remain in the HF repository; this game supplies no religious rulings.
