@@ -170,6 +170,14 @@ test("room objects expose their action and cost before activation", async ({ pag
 });
 
 test("the opening offers a whole first choice without scrolling", async ({ page }) => {
+  // Seed 0 has the longer, very-tired opening. Keep the viewport check on that case.
+  await page.addInitScript(() => {
+    const random = crypto.getRandomValues.bind(crypto);
+    Object.defineProperty(crypto, "getRandomValues", {
+      value: (array: Uint32Array<ArrayBuffer>) =>
+        array instanceof Uint32Array && array.length === 1 ? array.fill(0) : random(array),
+    });
+  });
   await page.goto("/");
   await page.getByRole("button", { name: "Begin with Recording off" }).click();
   expect(await page.evaluate(() => window.scrollY)).toBe(0);

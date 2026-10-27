@@ -622,10 +622,14 @@ dialog input[type="checkbox"] {
     padding-bottom: 10px;
   }
   .stage:has(#opening-cast) .scene-heading {
+    padding-top: 10px;
     padding-bottom: 8px;
   }
   .stage:has(#opening-cast) #choices {
     padding-top: 6px;
+  }
+  .transcript:has(#opening-cast) #text {
+    line-height: 1.5;
   }
   #opening-cast {
     font-size: 14px;
