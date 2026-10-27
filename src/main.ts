@@ -32,11 +32,17 @@ const scene = get("scene");
 const storageKey = "days-run-v1";
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
 let game = createGame(newSeed());
+let loadNotice = "";
 const saved = read(storageKey);
 if (saved) {
   try {
     game = replay(JSON.parse(saved));
-  } catch {
+  } catch (error) {
+    // A save this build cannot replay is never repaired; the player starts fresh and is told why.
+    loadNotice =
+      error instanceof Error && error.message.startsWith("This play was saved by an earlier")
+        ? error.message
+        : "Your saved play could not be checked, so a new play has started.";
     store(storageKey, "");
   }
 }
@@ -99,7 +105,11 @@ function render(focus = false) {
     cast.id = "opening-cast";
     cast.textContent =
       "Leyla's father Kemal has died. Hacer has come to pay her respects. Burak, a visitor, is good with accounts. Şükrü was Kemal's colleague.";
+    const notice = document.createElement("p");
+    notice.id = "save-notice";
+    notice.textContent = loadNotice;
     get("text").replaceChildren(
+      ...(loadNotice ? [notice] : []),
       cast,
       context,
       ...paragraphs.filter((_, index) => index === goalIndex),
@@ -158,6 +168,7 @@ function render(focus = false) {
         busy = true;
         try {
           game = choose(game, choice.id);
+          loadNotice = "";
           save();
           render(true);
         } finally {
@@ -245,6 +256,7 @@ get("cancel-restart").addEventListener("click", () => {
 });
 get("restart").addEventListener("click", () => {
   game = createGame(newSeed());
+  loadNotice = "";
   lab.captureSave(exportRun(game));
   save();
   menu.close();
@@ -312,8 +324,11 @@ if (new URLSearchParams(location.search).get("lab") === "1") {
         hashGame(restored) === hashGame(game)
           ? "Replay matches this play."
           : "Replay is valid but differs from this play.";
-    } catch {
-      status.textContent = "This export did not pass the replay check.";
+    } catch (error) {
+      status.textContent =
+        error instanceof Error && error.message.startsWith("This play was saved by an earlier")
+          ? error.message
+          : "This export did not pass the replay check.";
     }
   });
   download.addEventListener("click", () => {

@@ -1,6 +1,8 @@
+import { exportRun as exportArchive, restoreRun, step } from "@adam0white/human-framework";
 import { expect, it } from "vitest";
 import { probe } from "../scripts/policy-probe.ts";
 import { choose, createGame, exportRun, replay, view } from "../src/engine.ts";
+import { decisions, LEYLA, SELIN, tie } from "./actors.ts";
 
 function play(seed: number, ids: string[]) {
   let game = createGame(seed);
@@ -71,14 +73,35 @@ it("fatigue adds the cost of a second reader on either receipt branch", () => {
 });
 it("does not invent Selin as Leyla's companion before she arrives", () => {
   const game = play(42, ["welcome"]);
-  expect(
-    game.people[0]!.social.relationships.some((r) => r.otherId === "hf.cast.selin.voice"),
-  ).toBe(false);
+  expect(tie(game, LEYLA, SELIN)).toBeUndefined();
+  expect(tie(play(42, ["welcome", "check", "private"]), LEYLA, SELIN)).toBeDefined();
 });
 it("a refused HF action stays available and names the refusal", () => {
+  // The game never knocks Leyla down; this fixture uses HF's own body input to make her unable.
   const game = createGame(42);
-  game.people[0]!.body.downed = { since: 480, reason: "injury" };
+  const run = restoreRun(game.actors);
+  if (!run.ok) throw new Error(run.error.message);
+  const at = game.actors.current.at + 60_000;
+  const fall = step(run.value, {
+    until: at,
+    inputs: [
+      {
+        id: "test:fall",
+        at,
+        source: { type: "host", id: "days" },
+        kind: "body.received",
+        payload: {
+          person: LEYLA,
+          evidenceId: "test:fall",
+          receipt: { type: "fallen", cause: "test" },
+        },
+      },
+    ],
+  });
+  expect(fall.ok).toBe(true);
+  game.actors = exportArchive(run.value);
   const refused = choose(game, "alone");
+  expect(decisions(refused, LEYLA).at(-1)).toBeNull();
   expect(refused.step).toBe(0);
   expect(refused.choices.map((c) => c.id)).toContain("alone");
   expect(refused.text.join(" ")).toMatch(/cannot|refus|rest/);
@@ -97,27 +120,29 @@ it("Selin's HF decision changes with care and payment, not just the private page
   expect(burdened.helper).toBe(false);
   expect(quieted.helper).toBe(true);
   for (const game of [supported, burdened, quieted]) {
-    expect(game.people[3]!.trace.at(-1)?.chosenAffordanceId).toBe(game.helper ? "cover" : "home");
+    expect(decisions(game, SELIN)).toEqual([game.helper ? "cover" : "home"]);
   }
 });
 
-it("allows full reading-with-repair and payment-with-recovery routes", () => {
-  for (const policy of ["read-and-repair", "pay-and-recover"] as const) {
+for (const policy of ["read-and-repair", "pay-and-recover"] as const) {
+  it(`allows the full ${policy} route`, () => {
     const result = probe(42, policy);
     expect(result.outcome).toBe("won");
     expect(result.hours).toBeGreaterThanOrEqual(0);
     expect(result.privacyManaged).toBe(true);
-  }
-});
-it("a visible-state careful policy succeeds across 32 seeds while automatic policies lose", {
-  timeout: 30000,
-}, () => {
-  for (let seed = 0; seed < 32; seed++) {
+  });
+}
+// One test per seed: HF 4.0 hashes its archive on every step, so the 32 seeds no longer fit one
+// 30-second test. Each seed keeps the same assertions, its own exact replay and the same cap.
+for (let seed = 0; seed < 32; seed++) {
+  it(`a visible-state careful policy wins seed ${seed} while automatic policies lose`, {
+    timeout: 30000,
+  }, () => {
     expect(probe(seed, "careful").outcome).toBe("won");
     expect(probe(seed, "first").outcome).toBe("lost");
     expect(probe(seed, "careless").outcome).toBe("lost");
-  }
-});
+  });
+}
 
 it("records an exact replay hash for every measured policy run", () => {
   const result = probe(42, "careful");

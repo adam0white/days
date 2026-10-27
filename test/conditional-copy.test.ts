@@ -71,8 +71,8 @@ it("lets Selin leave before Leyla rests alone", () => {
   expect(text(game)).not.toContain("beside her");
 });
 
-it("names the unkept visit or unpaid agreed delivery and Şükrü's wait", () => {
-  for (const arrangement of ["delegate", "conceal"]) {
+for (const arrangement of ["delegate", "conceal"]) {
+  it(`names the unkept ${arrangement === "conceal" ? "agreed delivery" : "visit"} and Şükrü's wait`, () => {
     const game = play([
       "welcome",
       "check",
@@ -97,8 +97,8 @@ it("names the unkept visit or unpaid agreed delivery and Şükrü's wait", () =>
     );
     expect(text(game)).not.toContain("visit or delivery");
     expect(replay(exportRun(game))).toEqual(game);
-  }
-});
+  });
+}
 
 it("mentions carrying the envelope only while the visit or handoff is unfinished", () => {
   for (const answer of ["confirm", "leave"]) {
@@ -305,12 +305,14 @@ it("reports receipt retrieval and comparison without inventing repayment", () =>
   }
 });
 
-it("keeps ending histories and unfinished tasks tied to what happened", () => {
-  for (const [page, notebook, payment] of [
-    ["private", "protect", "check"],
-    ["read", "protect", "pay"],
-    ["read", "publish", "check"],
-  ] as const) {
+// One test per ending case: each full play now replays HF too, so the cases no longer fit one
+// 5-second test together. Every case keeps its assertions and its exact replay.
+for (const [page, notebook, payment] of [
+  ["private", "protect", "check"],
+  ["read", "protect", "pay"],
+  ["read", "publish", "check"],
+] as const) {
+  it(`keeps the ending history tied to what happened (${page}, ${notebook}, ${payment})`, () => {
     const beforeClose = play([
       "alone",
       payment,
@@ -335,7 +337,9 @@ it("keeps ending histories and unfinished tasks tied to what happened", () => {
       text(final).includes("nobody has addressed the harm of reading the private page aloud"),
     ).toBe(page === "read" && notebook === "publish");
     expect(replay(exportRun(final))).toEqual(final);
-  }
+  });
+}
+it("names unfinished tasks at the ending", () => {
   const visit = play([...prefix, "publish", "dismiss", "confirm", "silent", "close"]);
   const delivery = play([...prefix, "publish", "dismiss", "leave", "silent", "close"]);
   expect(text(visit)).toContain("The visit was kept");

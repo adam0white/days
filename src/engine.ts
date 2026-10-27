@@ -1,30 +1,44 @@
 import {
-  type Affordance,
-  begin,
+  type ActionResolution,
+  type Run as Actors,
+  type ActualConsequences,
+  step as advance,
   createPerson,
-  createRng,
-  decide,
-  finish,
-  type Person,
-  perceive,
-  random,
-  readPerson,
-  restore,
-  snapshot,
-  TRAIT_KEYS,
-  type Traits,
-  tick,
-  VALUE_KEYS,
-  type Values,
+  createRun,
+  type DeepReadonly,
+  exportRun as exportArchive,
+  type HostRequest,
+  type Input,
+  inspect,
+  type Offer,
+  type PersonAuthoring,
+  type Result,
+  type RunArchive,
+  type RunSpec,
+  replay as replayArchive,
+  restoreRun,
+  type StepResult,
 } from "@adam0white/human-framework";
 import { Story } from "inkjs";
 import compiled from "./story.json" with { type: "json" };
 import type { GameView, Outcome } from "./types.ts";
 
-const VERSION = "three-days-2";
+// HF 4.0.0 run API (pinned 2026-10-27). HF owns the five people: their bodies, needs,
+// decisions and ties. The host owns the room, hours, savings, the notebook, the account,
+// the promise and whether an act physically succeeded. Every host fact that a person
+// should know enters as a timestamped input; every reading leaves through `inspect`.
+const VERSION = "three-days-3";
+const OLD_VERSION = "three-days-2";
 const LEYLA = "hf.cast.leyla.days";
 const KEMAL = "hf.cast.kemal.days";
 const SELIN = "hf.cast.selin.voice";
+const HOST = { type: "host", id: "days" } as const;
+const MINUTE = 60_000;
+const DAY = 86_400_000;
+const YEAR = 525_960 * MINUTE;
+const START = 8 * 60 * MINUTE;
+const REFUSAL_PAUSE = 20 * MINUTE;
+const MAX_INPUTS = 64;
 const names = ["Leyla", "Hacer", "Burak", "Selin", "Şükrü"];
 const ids = [LEYLA, "hf.cast.hacer.voice", "hf.cast.burak.stairwell", SELIN, "hf.cast.sukru.days"];
 export interface Game {
@@ -41,7 +55,12 @@ export interface Game {
   laterDelivery: boolean;
   refused: boolean;
   ink: string;
-  people: Person[];
+  /** The HF 4.0 run archive: spec, input log, current state and hashes. */
+  actors: DeepReadonly<RunArchive>;
+  /** Host revision for the offers it gives each person. */
+  offerRevision: number;
+  /** Leyla's HF fatigue readout, read with `inspect` at the archive's current time. */
+  bodyFatigue: number;
   evidenceHolder: string;
   checked: boolean;
   compared: boolean;
@@ -69,9 +88,122 @@ function required<T>(value: T | undefined): T {
   if (value === undefined) throw new Error("Required game data is missing.");
   return value;
 }
+function need<T>(result: Result<T>): T {
+  if (!result.ok) throw new Error(`HF refused the run: ${result.error.code} ${result.error.path}`);
+  return result.value;
+}
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value));
-function opening(seed: number): Person[] {
-  const traits: Partial<Traits>[] = [
+/**
+ * Host-owned seeded draws for the two scene facts (splitmix32 seeding, sfc32 draws). They match the
+ * HF 3.2 build's draws, so a seed keeps its starting tiredness and receipt holder. HF keeps its own
+ * random state inside its run.
+ */
+function hostDraws(seed: number): () => number {
+  let s = seed >>> 0;
+  const word = () => {
+    s = (s + 0x9e3779b9) >>> 0;
+    let z = s;
+    z = Math.imul(z ^ (z >>> 16), 0x85ebca6b) >>> 0;
+    z = Math.imul(z ^ (z >>> 13), 0xc2b2ae35) >>> 0;
+    return (z ^ (z >>> 16)) >>> 0;
+  };
+  let [a, b, c, d] = [word(), word(), word(), word()];
+  const draw = () => {
+    const t = (((a + b) >>> 0) + d) >>> 0;
+    d = (d + 1) >>> 0;
+    a = b ^ (b >>> 9);
+    b = (c + (c << 3)) >>> 0;
+    c = ((c << 21) | (c >>> 11)) >>> 0;
+    c = (c + t) >>> 0;
+    return t / 4294967296;
+  };
+  for (let i = 0; i < 12; i++) draw();
+  return draw;
+}
+const action = (id: string, effort: number, focus: number, tags: string[]) => ({
+  id,
+  label: id,
+  demands: { effort, focus, mode: "awake" as const, requires: {} },
+  tags,
+  norms: [],
+});
+function spec(seed: number): RunSpec {
+  return {
+    id: "three-days",
+    seed,
+    start: START,
+    host: { id: "days", edition: VERSION, schema: VERSION },
+    definitions: {
+      actions: [
+        action("talk", 0.1, 0.25, ["social"]),
+        action("rest", 0, 0, ["rest"]),
+        action("help", 0.1, 0, ["help", "social"]),
+        action("leave", 0.1, 0, []),
+      ],
+      norms: [],
+      marriageCustoms: [],
+      skills: [],
+      skillTransfers: [],
+      methods: [],
+      routines: [],
+      sources: [HOST],
+      lexicon: {
+        names: Object.fromEntries([
+          ...ids.map((id, i) => [id, required(names[i])]),
+          [KEMAL, "Kemal"],
+        ]),
+        roles: {},
+        prefer: "name",
+        actions: {},
+      },
+      calendar: {
+        id: "leave",
+        epoch: { id: "midnight", simulationAt: 0, dayIndex: 0, msOfDay: 0 },
+        dayMs: DAY,
+        days: [0, 1, 2, 3].map((dayIndex) => ({ dayIndex, start: dayIndex * DAY, windows: [] })),
+      },
+    },
+    lifecycle: { kinPremises: [], kinScopes: [] },
+    // Kemal is a known person who has died, never an actor in this run.
+    world: {
+      revision: 0,
+      facts: [
+        {
+          id: "kemal-died",
+          subject: KEMAL,
+          predicate: "died",
+          value: true,
+          at: START,
+          provenance: { source: "days", evidenceId: "days:death" },
+        },
+      ],
+      hostState: {},
+    },
+  };
+}
+const TRAITS = {
+  honesty: 0.5,
+  emotionality: 0.5,
+  extraversion: 0.5,
+  agreeableness: 0.5,
+  conscientiousness: 0.5,
+  openness: 0.5,
+};
+const VALUES = {
+  benevolence: 0.5,
+  universalism: 0.5,
+  tradition: 0.5,
+  conformity: 0.5,
+  security: 0.5,
+  achievement: 0.5,
+  power: 0.5,
+  hedonism: 0.5,
+  stimulation: 0.5,
+  selfDirection: 0.5,
+};
+function authored(i: number): PersonAuthoring {
+  const id = required(ids[i]);
+  const traits = [
     {
       conscientiousness: 0.75,
       extraversion: 0.35,
@@ -91,39 +223,154 @@ function opening(seed: number): Person[] {
       emotionality: 0.55,
       openness: 0.4,
     },
-  ];
-  return names.map((name, i) => {
-    const p = createPerson({
-      id: required(ids[i]),
-      name,
-      seed: seed + i,
-      now: 480,
-      bornAt: 480 - required([49, 58, 31, 32, 79][i]) * 525960,
-      sex: i === 2 || i === 4 ? "male" : "female",
-      traits: { ...Object.fromEntries(TRAIT_KEYS.map((k) => [k, 0.5])), ...traits[i] },
-      values: {
-        ...Object.fromEntries(VALUE_KEYS.map((k) => [k, 0.5])),
-        ...(i === 3 ? { benevolence: 0.8, achievement: 0.6, tradition: 0.4 } : {}),
-      } as Values,
-      relationships:
-        i === 0
-          ? [{ otherId: KEMAL, roles: ["parent"], affection: 0.7, trust: 0.6, familiarity: 1 }]
-          : [{ otherId: LEYLA, roles: ["friend"], affection: 0.4, trust: 0.6, familiarity: 0.5 }],
-      enable: { fatigueStore: true },
-    });
-    perceive(p, [
-      {
-        at: p.now,
-        channel: "told",
-        kind: "death",
-        targetId: KEMAL,
-        salience: 1,
-        valence: -0.8,
-        summary: "Kemal has died. His daughter is receiving condolences.",
-      },
-    ]);
-    return snapshot(p);
+  ][i];
+  const tie = (otherId: string, roles: string[], affection: number, familiarity: number) => ({
+    otherId,
+    roles,
+    affection,
+    trust: 0.6,
+    respect: 0,
+    familiarity,
+    ledger: 0,
+    lastInteraction: START,
   });
+  return {
+    id,
+    identity: {
+      name: required(names[i]),
+      birthAt: START - required([49, 58, 31, 32, 79][i]) * YEAR,
+      sex: i === 2 || i === 4 ? "male" : "female",
+      castId: id,
+    },
+    biography: [],
+    origin: {
+      kind: "authored",
+      basis: { kind: "evidence", id: `days:cast:${id}` },
+      traits: {
+        kind: "explicit-authoring",
+        evidence: { kind: "evidence", id: `days:traits:${id}` },
+      },
+    },
+    state: {
+      traits: { ...TRAITS, ...traits },
+      values: {
+        ...VALUES,
+        ...(i === 3 ? { benevolence: 0.8, achievement: 0.6, tradition: 0.4 } : {}),
+      },
+      body: {
+        satiety: 0.8,
+        hydration: 0.85,
+        sleepPressure: 0.2,
+        exertion: 0,
+        fitness: 0.5,
+        health: 1,
+        pain: 0,
+        sleepDebtHours: 0,
+        depletion: 0,
+        circadianPeakMs: 16 * 60 * MINUTE,
+        asleep: false,
+        since: START,
+        doze: {
+          context: { posture: "upright", stimulation: 0.5 },
+          basis: { kind: "authored", author: "days", at: START },
+        },
+        bladder: { fill: 0, pending: 0 },
+        injuries: [],
+        illnesses: [],
+        exposures: [],
+      },
+      needs: {
+        safety: 0.8,
+        belonging: 0.7,
+        esteem: 0.6,
+        autonomy: 0.7,
+        competence: 0.6,
+        leisure: 0.6,
+        meaning: 0.6,
+      },
+      skills: [],
+      heldNorms: [],
+      beliefs: [],
+      consequences: [],
+      sourceTrust: [],
+      context: {
+        scarcity: { kind: "prior", value: 0, basis: "engineering:source-zero-context" },
+        smoking: { kind: "unobserved" },
+      },
+      relationships:
+        i === 0 ? [tie(KEMAL, ["parent"], 0.7, 1)] : [tie(LEYLA, ["friend"], 0.4, 0.5)],
+      voices: [],
+      agenda: {
+        exemptions: { traveling: { kind: "unobserved" }, illnessSeverity: { kind: "unobserved" } },
+        commitments: [],
+        goals: [],
+        precommitments: [],
+        owed: [],
+      },
+      family: { contactCovered: [], aptitudes: {} },
+      groups: [],
+      reserve: {},
+      retention: { trace: 32, chronicleDays: 120 },
+      habits: [],
+      expectations: [],
+      affect: { mood: { valence: 0, arousal: 0.3 }, regulation: 0.3, emotions: [] },
+      promptings: { reading: "none", responses: [] },
+      review: { style: "accounting", atMsOfDay: 21 * 60 * MINUTE },
+      bonds: { courtships: [], marriages: [] },
+    },
+  };
+}
+function opening(seed: number): Actors {
+  const run = need(createRun(spec(seed)));
+  for (let i = 0; i < ids.length; i++) need(createPerson(run, authored(i)));
+  // Everyone in the room hears of the death through one input; HF words it from the lexicon.
+  need(
+    advance(run, {
+      until: START,
+      inputs: ids.map((person) => ({
+        id: `days:death:${person}`,
+        at: START,
+        source: HOST,
+        kind: "death.heard",
+        payload: { person, evidenceId: "days:death", deceased: KEMAL, reporter: "days" },
+      })),
+    }),
+  );
+  return run;
+}
+/**
+ * Live HF runs keyed by the full hash of the archive they would export. The archive in the game
+ * is the truth: a run is taken out when its game moves on, so a second choice from the same game
+ * restores its own copy from the archive. This only saves re-checking the archive on every choice.
+ */
+const live = new Map<string, Actors>();
+function keep(game: Game, run: Actors) {
+  game.actors = exportArchive(run);
+  live.delete(game.actors.hashes.full);
+  live.set(game.actors.hashes.full, run);
+  for (const key of live.keys()) {
+    if (live.size <= 4) break;
+    live.delete(key);
+  }
+}
+function take(game: Game): Actors {
+  const key = game.actors.hashes.full;
+  const run = live.get(key);
+  live.delete(key);
+  return run ?? need(restoreRun(game.actors));
+}
+function now(run: Actors): number {
+  return need(inspect(run, { perspective: { kind: "host" }, people: [LEYLA], select: ["summary"] }))
+    .at;
+}
+function readFatigue(run: Actors): number {
+  const view = need(
+    inspect(run, { perspective: { kind: "host" }, people: [LEYLA], select: ["body"] }),
+  );
+  const part = view.people[0]?.parts[0];
+  if (view.people[0]?.kind !== "host" || part?.select !== "body" || !("readout" in part.value))
+    throw new Error("HF did not return Leyla's body.");
+  return part.value.readout.fatigue;
 }
 function runtime(game: Game, load = true): Story {
   const story = new Story(compiled);
@@ -168,14 +415,15 @@ function collect(game: Game, story: Story, consequence?: string) {
 export function createGame(seed: number): Game {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error("Use a whole seed from 0 to 4294967295.");
-  const rng = createRng(seed);
+  const draw = hostDraws(seed);
+  const run = opening(seed);
   const game: Game = {
     version: VERSION,
     seed,
     inputs: [],
     step: 0,
     stretches: 6,
-    fatigue: 2 + Math.floor(random(rng) * 2),
+    fatigue: 2 + Math.floor(draw() * 2),
     paid: false,
     paidCreditor: false,
     privacyManaged: true,
@@ -183,8 +431,10 @@ export function createGame(seed: number): Game {
     laterDelivery: false,
     refused: false,
     ink: "",
-    people: opening(seed),
-    evidenceHolder: required(["Hacer", "Burak", "Selin"][Math.floor(random(rng) * 3)]),
+    actors: exportArchive(run),
+    offerRevision: 0,
+    bodyFatigue: readFatigue(run),
+    evidenceHolder: required(["Hacer", "Burak", "Selin"][Math.floor(draw() * 3)]),
     checked: false,
     compared: false,
     privacy: true,
@@ -200,80 +450,254 @@ export function createGame(seed: number): Game {
     title: "",
     choices: [],
   };
+  live.set(game.actors.hashes.full, run);
   collect(game, runtime(game, false));
   return game;
 }
-function act(person: Person, action: string, rest = false, companion?: string): boolean {
-  const offer: Affordance = {
-    id: `${action}:${person.now}`,
-    action: rest ? "rest" : "talk",
-    label: action,
-    duration: rest ? 60 : 20,
-    effort: rest ? 0 : 0.1,
-    focus: rest ? 0 : 0.25,
-    advertises: rest ? { leisure: 0.4 } : { belonging: 0.3, esteem: 0.2 },
-    ...(companion ? { with: [companion], tags: ["social", "help"] } : {}),
-  };
-  const record = decide(person, [offer]);
-  if (record.chosenAffordanceId !== offer.id || !begin(person, offer, record)) return false;
-  tick(person, person.now + offer.duration);
-  finish(person, {
-    affordanceId: offer.id,
-    action: offer.action,
-    status: "completed",
-    at: person.now,
-    needs: rest ? { food: 0.5, water: 0.6, leisure: 0.4 } : { belonging: 0.2 },
-    summary: action,
-  });
-  return true;
+interface Act {
+  offers: Offer[];
+  /** What the host saw happen when the person finished the chosen offer. */
+  actual: (offer: Offer) => ActualConsequences;
 }
-function requestHelp(game: Game): boolean {
+function offer(
+  person: string,
+  id: string,
+  actionId: string,
+  minutes: number,
+  effort: number,
+  focus: number,
+  needs: Record<string, number>,
+  participants: string[] = [],
+  tags: string[] = [],
+): Offer {
+  return {
+    id,
+    actionId,
+    label: id,
+    person,
+    durationMs: minutes * MINUTE,
+    participants,
+    alongside: [],
+    demands: { effort, focus, mode: "awake", requires: {} },
+    tags,
+    norms: [],
+    expected: { needs, followedBy: [], provenance: ["days:offer"] },
+    fulfills: [],
+    advances: [],
+    diminishes: [],
+  };
+}
+/**
+ * One scene for one person. The scene starts one minute after the run's current time, because
+ * HF closes each reached time to new inputs. The host gives the offers, asks for a decision,
+ * answers every action request exactly once and advances HF only to the end of the act it
+ * accepted (or a short pause when the person takes nothing). Returns the completed offer.
+ */
+function perform(run: Actors, game: Game, person: string, act: Act): Offer | undefined {
+  const at = now(run) + MINUTE;
+  const revision = ++game.offerRevision;
+  const inputs: Input[] = [
+    {
+      id: `days:offers:${revision}`,
+      at,
+      source: HOST,
+      kind: "offers.received",
+      payload: { person, revision, offers: act.offers },
+    },
+    {
+      id: `days:decide:${revision}`,
+      at,
+      source: HOST,
+      kind: "decision.requested",
+      payload: { person, reason: "scene", treatment: "ordinary", offerRevision: revision },
+    },
+  ];
+  let started: { offer: Offer; activityId: string; start: number } | undefined;
+  let completed: Offer | undefined;
+  let withdrawn = false;
+  // Without an accepted act, the scene is a short pause. Accepting an act extends it to the act's end.
+  let until = at + REFUSAL_PAUSE;
+  let result: DeepReadonly<StepResult> = need(advance(run, { until, inputs }));
+  for (let boundary = 0; result.boundary.type === "world-required"; boundary++) {
+    if (boundary >= 16) throw new Error("The scene did not settle.");
+    const answers = [...result.boundary.requests]
+      .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+      .map(answer);
+    // A taken offer is no longer open: one millisecond after the act starts, the host
+    // withdraws the scene's offers, so the same choice cannot be taken (or charged) twice.
+    if (started && !withdrawn) {
+      until = Math.max(until, started.start + started.offer.durationMs);
+      withdrawn = true;
+      answers.push({
+        id: `days:withdraw:${revision}`,
+        at: started.start + 1,
+        source: HOST,
+        kind: "offers.received",
+        payload: { person, revision: ++game.offerRevision, offers: [] },
+      });
+    }
+    result = need(advance(run, { until, inputs: answers }));
+  }
+  if (!result.reachedUntil || result.at !== until) throw new Error("The scene did not settle.");
+  game.bodyFatigue = readFatigue(run);
+  return completed;
+
+  function answer(request: DeepReadonly<HostRequest>): Input {
+    const id = `days:answer:${request.id}`;
+    if (request.kind === "communication")
+      return {
+        id,
+        at: request.boundaryAt,
+        source: HOST,
+        kind: "communication.resolved",
+        payload: {
+          requestId: request.id,
+          requestHash: request.requestHash,
+          worldRevision: request.worldRevision,
+          speaker: request.speaker,
+          emittedItemIds: [],
+          received: [],
+        },
+      };
+    const base = {
+      requestId: request.id,
+      requestHash: request.requestHash,
+      person: request.person,
+      activityId: request.activityId,
+      stage: request.stage,
+      worldRevision: request.worldRevision,
+      observations: [],
+    };
+    const resolved = (payload: ActionResolution): Input => ({
+      id,
+      at: request.boundaryAt,
+      source: HOST,
+      kind: "action.resolved",
+      payload,
+    });
+    const chosen = act.offers.find((o) => o.id === request.offerId);
+    if (request.stage === "start") {
+      // Only the first start of this scene's own offer is accepted; anything else was not offered now.
+      if (started || !chosen || request.person !== person || request.offerRevision !== revision)
+        return resolved({ ...base, disposition: "rejected" });
+      started = { offer: chosen, activityId: request.activityId, start: request.boundaryAt };
+      return resolved({ ...base, disposition: "accepted" });
+    }
+    if (!started || request.activityId !== started.activityId)
+      throw new Error("HF asked to settle an act the host never accepted.");
+    const status = request.stage === "finish" ? "completed" : "interrupted";
+    if (status === "completed") completed = started.offer;
+    return resolved({
+      ...base,
+      disposition: status,
+      outcome: {
+        activityId: started.activityId,
+        offerId: started.offer.id,
+        actionId: started.offer.actionId,
+        start: started.start,
+        end: request.boundaryAt,
+        status,
+        evidenceId: `days:outcome:${request.id}`,
+        summary: started.offer.label,
+        actual:
+          status === "completed"
+            ? act.actual(started.offer)
+            : { exposures: [], observedProgress: [] },
+        fulfills: [],
+        advances: [],
+      },
+    });
+  }
+}
+function act(run: Actors, game: Game, id: string, rest: boolean, companion?: string): boolean {
+  const done = perform(run, game, LEYLA, {
+    offers: [
+      rest
+        ? offer(LEYLA, id, "rest", 60, 0, 0, { leisure: 0.4 }, [], ["rest"])
+        : offer(
+            LEYLA,
+            id,
+            "talk",
+            20,
+            0.1,
+            0.25,
+            { belonging: 0.3, esteem: 0.2 },
+            companion ? [companion] : [],
+            companion ? ["social", "help"] : ["social"],
+          ),
+    ],
+    actual: () =>
+      rest
+        ? {
+            consumed: { food: 0.5, water: 0.6 },
+            psychological: { leisure: 0.4 },
+            exposures: [],
+            observedProgress: [],
+          }
+        : { psychological: { belonging: 0.2 }, exposures: [], observedProgress: [] },
+  });
+  return done?.id === id;
+}
+function requestHelp(run: Actors, game: Game): boolean {
   // An open, fed household needs less work from Selin. Quieting the immediate
   // payment demand makes the agreed shift easier, even when that payment was mistaken.
+  // These host facts reach Selin only as the effort of the shift she is offered.
   const shiftEffort =
     0.07 +
     (game.inputs.includes("welcome") ? 0 : 0.07) +
     (game.paid ? -0.04 : 0.03) +
     (tiredness(game) >= 3 ? 0.02 : 0);
-  const selin = required(game.people[3]);
-  const assist: Affordance = {
-    id: "cover",
-    action: "help",
-    label: "Cover the door for an agreed short shift",
-    duration: 20,
-    effort: shiftEffort,
-    advertises: { belonging: 0.25, esteem: 0.15 },
-    with: [LEYLA],
-    tags: ["help", "social"],
-  };
-  const leave: Affordance = {
-    id: "home",
-    action: "leave",
-    label: "Go home to your own household",
-    duration: 60,
-    effort: 0.1,
-    advertises: { autonomy: 0.7, leisure: 0.7 },
-  };
-  const record = decide(selin, [assist, leave]);
-  const offer = record.chosenAffordanceId === "cover" ? assist : leave;
-  if (!begin(selin, offer, record)) return false;
-  tick(selin, selin.now + offer.duration);
-  finish(selin, {
-    affordanceId: offer.id,
-    action: offer.action,
-    status: "completed",
-    at: selin.now,
-    needs: offer.advertises,
-    summary: offer.label,
+  const cover = offer(
+    SELIN,
+    "cover",
+    "help",
+    20,
+    shiftEffort,
+    0,
+    { belonging: 0.25, esteem: 0.15 },
+    [LEYLA],
+    ["help", "social"],
+  );
+  cover.label = "Cover the door for an agreed short shift";
+  const home = offer(SELIN, "home", "leave", 60, 0.1, 0, { autonomy: 0.7, leisure: 0.7 });
+  home.label = "Go home to your own household";
+  const done = perform(run, game, SELIN, {
+    offers: [cover, home],
+    actual: (chosen) => ({
+      psychological:
+        chosen.id === "cover" ? { belonging: 0.25, esteem: 0.15 } : { autonomy: 0.7, leisure: 0.7 },
+      exposures: [],
+      observedProgress: [],
+    }),
   });
-  return offer.id === "cover";
+  return done?.id === "cover";
+}
+/** Selin was in the room when the private page was read aloud. HF decides what it does to her tie. */
+function witnessHarm(run: Actors) {
+  const at = now(run) + MINUTE;
+  need(
+    advance(run, {
+      until: at,
+      inputs: [
+        {
+          id: `days:harm:${at}`,
+          at,
+          source: HOST,
+          kind: "social.received",
+          payload: {
+            person: SELIN,
+            evidenceId: "days:page-read-aloud",
+            other: LEYLA,
+            event: { kind: "harm", byMe: false, magnitude: 0.7 },
+          },
+        },
+      ],
+    }),
+  );
 }
 function tiredness(game: Game): number {
   // The authored scene demand and HF's bodily readout can each require more care.
-  return Math.min(
-    5,
-    Math.max(game.fatigue, Math.floor(readPerson(required(game.people[0])).body.fatigue * 4)),
-  );
+  return Math.min(5, Math.max(game.fatigue, Math.floor(game.bodyFatigue * 4)));
 }
 function comparisonHours(game: Game, remote = false): number {
   const original = remote ? 2 : game.checked ? 1 : 2;
@@ -319,14 +743,14 @@ function spend(game: Game, hours: number): boolean {
   game.stretches -= hours;
   return true;
 }
-function apply(game: Game, id: string): string {
-  const leyla = required(game.people[0]);
+function apply(run: Actors, game: Game, id: string): string {
   // Only offer companionship when a person is actually present for this act.
   const companion = ["private", "read", "ask", "speak", "silent"].includes(id) ? SELIN : undefined;
-  const completed = act(leyla, id, id === "rest" || id === "welcome", companion);
-  game.refused = !completed && id !== "close";
+  // The close needs no act from Leyla; every other choice is one HF act, charged once.
+  const completed =
+    id === "close" || act(run, game, id, id === "rest" || id === "welcome", companion);
+  game.refused = !completed;
   if (game.refused) {
-    tick(leyla, leyla.now + 20);
     return "Leyla cannot take that on now. No agreement or task has been completed. The choice is still here; she pauses before trying again.";
   }
   switch (id) {
@@ -351,22 +775,11 @@ function apply(game: Game, id: string): string {
     case "read":
       game.privacy = false;
       game.privacyManaged = false;
-      perceive(required(game.people[3]), [
-        {
-          at: required(game.people[3]).now,
-          channel: "social",
-          kind: "harm",
-          actorId: LEYLA,
-          targetId: SELIN,
-          salience: 1,
-          valence: -0.7,
-          summary: "Leyla read a private hospital page aloud without permission.",
-        },
-      ]);
+      witnessHarm(run);
       return "Hacer recognises the dates and offers to sort the entries with Burak. That saves one hour on a private comparison. The room has also heard a private hospital name. Selin pulls her chair back. Containing the disclosure will take an hour; it cannot make people unhear it.";
     case "ask":
       game.asked = true;
-      game.helper = requestHelp(game);
+      game.helper = requestHelp(run, game);
       return game.helper
         ? `Selin agrees to one short shift. It costs her an evening at home. Leyla still needs ${journeyHours(game)} ${journeyHours(game) === 1 ? "hour" : "hours"} for the visit itself.`
         : `Selin decides to go home. She cannot cover the door. A visit will take ${journeyHours(game)} hours, or Leyla can pay for an agreed delivery.`;
@@ -465,6 +878,7 @@ function apply(game: Game, id: string): string {
 export function choose(input: Game, id: string): Game {
   if (!input || input.version !== VERSION || input.outcome !== "playing" || typeof id !== "string")
     throw new Error("This run cannot take that choice.");
+  if (input.inputs.length >= MAX_INPUTS) throw new Error("This run has reached its choice limit.");
   const game = clone(input);
   const story = runtime(game);
   const index = game.choices.findIndex((c) => c.id === id);
@@ -473,9 +887,9 @@ export function choose(input: Game, id: string): Game {
     story.currentChoices[index]?.tags?.filter((t) => t === `action:${id}`).length !== 1
   )
     throw new Error("That choice is not available.");
-  game.people = game.people.map((p) => restore(p));
-  const consequence = apply(game, id);
-  game.people = game.people.map((p) => snapshot(p));
+  const run = take(game);
+  const consequence = apply(run, game, id);
+  keep(game, run);
   game.inputs.push(id);
   if (game.refused) {
     game.text = [
@@ -541,11 +955,15 @@ export function exportRun(game: Game): Run {
   };
 }
 export function replay(input: Run): Game {
+  if (input && (input.version === OLD_VERSION || input.state?.version === OLD_VERSION))
+    throw new Error(
+      "This play was saved by an earlier Three Days build (Human Framework 3.2) and cannot continue. Start a new play.",
+    );
   if (
     !input ||
     input.version !== VERSION ||
     !Array.isArray(input.inputs) ||
-    input.inputs.length > 64 ||
+    input.inputs.length > MAX_INPUTS ||
     !input.state ||
     typeof input.hash !== "string"
   )
@@ -557,6 +975,9 @@ export function replay(input: Run): Game {
     hashGame(input.state) !== input.hash ||
     JSON.stringify(game.inputs) !== JSON.stringify(input.state.inputs)
   )
+    throw new Error("The export does not match its recorded choices.");
+  // HF checks its own archive too: the input log rebuilds the same people and every hash.
+  if (!need(replayArchive(game.actors)).verified)
     throw new Error("The export does not match its recorded choices.");
   return game;
 }
