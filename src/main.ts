@@ -290,7 +290,7 @@ function begin(off = false) {
 }
 get("begin").addEventListener("click", () => begin());
 get("begin-off").addEventListener("click", () => begin(true));
-if (new URLSearchParams(location.search).get("lab") === "1") {
+{
   const tools = get("lab");
   const exportButton = document.createElement("button");
   exportButton.type = "button";
@@ -303,6 +303,7 @@ if (new URLSearchParams(location.search).get("lab") === "1") {
   const status = document.createElement("p");
   status.id = "lab-status";
   status.setAttribute("role", "status");
+  const diagnostics = get("debug");
   const check = document.createElement("button");
   check.type = "button";
   check.textContent = "Check replay";
@@ -339,7 +340,8 @@ if (new URLSearchParams(location.search).get("lab") === "1") {
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-  tools.append(exportButton, data, check, download, status);
+  tools.append(exportButton, data, download);
+  diagnostics.append(check, status);
 }
 render();
 if (read("days-notice-v1") !== "1") notice.showModal();

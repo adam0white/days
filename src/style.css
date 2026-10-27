@@ -641,3 +641,12 @@ dialog input[type="checkbox"] {
     padding: 6px 0;
   }
 }
+
+.privacy-debug {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+.privacy-debug details {
+  flex: 1;
+}
