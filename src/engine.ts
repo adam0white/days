@@ -339,25 +339,20 @@ function opening(seed: number): Actors {
   return run;
 }
 /**
- * Live HF runs keyed by the full hash of the archive they would export. The archive in the game
- * is the truth: a run is taken out when its game moves on, so a second choice from the same game
- * restores its own copy from the archive. This only saves re-checking the archive on every choice.
+ * Live HF runs keyed by the frozen archive object that `keep` put into the game. The archive in
+ * the game is the truth: only that exact, unchangeable archive finds its run, and a run is taken
+ * out when its game moves on. Any other game object, even an identical copy, restores its own run
+ * from the archive, so HF checks every archive it did not export itself.
  */
-const live = new Map<string, Actors>();
+const live = new WeakMap<object, Actors>();
 function keep(game: Game, run: Actors) {
   game.actors = exportArchive(run);
-  live.delete(game.actors.hashes.full);
-  live.set(game.actors.hashes.full, run);
-  for (const key of live.keys()) {
-    if (live.size <= 4) break;
-    live.delete(key);
-  }
+  live.set(game.actors, run);
 }
-function take(game: Game): Actors {
-  const key = game.actors.hashes.full;
-  const run = live.get(key);
-  live.delete(key);
-  return run ?? need(restoreRun(game.actors));
+function take(archive: DeepReadonly<RunArchive>): Actors {
+  const run = live.get(archive);
+  live.delete(archive);
+  return run ?? need(restoreRun(archive));
 }
 function now(run: Actors): number {
   return need(inspect(run, { perspective: { kind: "host" }, people: [LEYLA], select: ["summary"] }))
@@ -450,7 +445,7 @@ export function createGame(seed: number): Game {
     title: "",
     choices: [],
   };
-  live.set(game.actors.hashes.full, run);
+  live.set(game.actors, run);
   collect(game, runtime(game, false));
   return game;
 }
@@ -491,9 +486,10 @@ function offer(
  * One scene for one person. The scene starts one minute after the run's current time, because
  * HF closes each reached time to new inputs. The host gives the offers, asks for a decision,
  * answers every action request exactly once and advances HF only to the end of the act it
- * accepted (or a short pause when the person takes nothing). Returns the completed offer.
+ * accepted (or a short pause when the person takes nothing). Returns the settled offer, if any.
  */
-function perform(run: Actors, game: Game, person: string, act: Act): Offer | undefined {
+type Settled = { offer: Offer; status: "completed" | "interrupted" };
+function perform(run: Actors, game: Game, person: string, act: Act): Settled | undefined {
   const at = now(run) + MINUTE;
   const revision = ++game.offerRevision;
   const inputs: Input[] = [
@@ -513,7 +509,7 @@ function perform(run: Actors, game: Game, person: string, act: Act): Offer | und
     },
   ];
   let started: { offer: Offer; activityId: string; start: number } | undefined;
-  let completed: Offer | undefined;
+  let settled: Settled | undefined;
   let withdrawn = false;
   // Without an accepted act, the scene is a short pause. Accepting an act extends it to the act's end.
   let until = at + REFUSAL_PAUSE;
@@ -540,7 +536,7 @@ function perform(run: Actors, game: Game, person: string, act: Act): Offer | und
   }
   if (!result.reachedUntil || result.at !== until) throw new Error("The scene did not settle.");
   game.bodyFatigue = readFatigue(run);
-  return completed;
+  return settled;
 
   function answer(request: DeepReadonly<HostRequest>): Input {
     const id = `days:answer:${request.id}`;
@@ -586,7 +582,7 @@ function perform(run: Actors, game: Game, person: string, act: Act): Offer | und
     if (!started || request.activityId !== started.activityId)
       throw new Error("HF asked to settle an act the host never accepted.");
     const status = request.stage === "finish" ? "completed" : "interrupted";
-    if (status === "completed") completed = started.offer;
+    settled = { offer: started.offer, status };
     return resolved({
       ...base,
       disposition: status,
@@ -609,7 +605,13 @@ function perform(run: Actors, game: Game, person: string, act: Act): Offer | und
     });
   }
 }
-function act(run: Actors, game: Game, id: string, rest: boolean, companion?: string): boolean {
+function act(
+  run: Actors,
+  game: Game,
+  id: string,
+  rest: boolean,
+  companion?: string,
+): Settled["status"] | "refused" {
   const done = perform(run, game, LEYLA, {
     offers: [
       rest
@@ -636,7 +638,7 @@ function act(run: Actors, game: Game, id: string, rest: boolean, companion?: str
           }
         : { psychological: { belonging: 0.2 }, exposures: [], observedProgress: [] },
   });
-  return done?.id === id;
+  return done?.offer.id === id ? done.status : "refused";
 }
 function requestHelp(run: Actors, game: Game): boolean {
   // An open, fed household needs less work from Selin. Quieting the immediate
@@ -670,7 +672,7 @@ function requestHelp(run: Actors, game: Game): boolean {
       observedProgress: [],
     }),
   });
-  return done?.id === "cover";
+  return done?.offer.id === "cover" && done.status === "completed";
 }
 /** Selin was in the room when the private page was read aloud. HF decides what it does to her tie. */
 function witnessHarm(run: Actors) {
@@ -747,9 +749,13 @@ function apply(run: Actors, game: Game, id: string): string {
   // Only offer companionship when a person is actually present for this act.
   const companion = ["private", "read", "ask", "speak", "silent"].includes(id) ? SELIN : undefined;
   // The close needs no act from Leyla; every other choice is one HF act, charged once.
-  const completed =
-    id === "close" || act(run, game, id, id === "rest" || id === "welcome", companion);
-  game.refused = !completed;
+  const status =
+    id === "close" ? "completed" : act(run, game, id, id === "rest" || id === "welcome", companion);
+  game.refused = status !== "completed";
+  // An interrupted act was started and spent Leyla's time and effort in HF, but the host saw no
+  // task done, so the choice stays as after a refusal and says what happened.
+  if (status === "interrupted")
+    return "Leyla cannot take that on now: she started, but could not finish. No agreement or task has been completed. The choice is still here; she pauses before trying again.";
   if (game.refused) {
     return "Leyla cannot take that on now. No agreement or task has been completed. The choice is still here; she pauses before trying again.";
   }
@@ -887,7 +893,7 @@ export function choose(input: Game, id: string): Game {
     story.currentChoices[index]?.tags?.filter((t) => t === `action:${id}`).length !== 1
   )
     throw new Error("That choice is not available.");
-  const run = take(game);
+  const run = take(input.actors);
   const consequence = apply(run, game, id);
   keep(game, run);
   game.inputs.push(id);
@@ -976,8 +982,14 @@ export function replay(input: Run): Game {
     JSON.stringify(game.inputs) !== JSON.stringify(input.state.inputs)
   )
     throw new Error("The export does not match its recorded choices.");
-  // HF checks its own archive too: the input log rebuilds the same people and every hash.
-  if (!need(replayArchive(game.actors)).verified)
+  // HF checks the exported archive too: its input log must rebuild the same people and every
+  // hash, and it must be the archive these choices rebuild.
+  const archive = input.state.actors;
+  if (
+    !archive?.hashes ||
+    archive.hashes.full !== game.actors.hashes.full ||
+    !need(replayArchive(archive)).verified
+  )
     throw new Error("The export does not match its recorded choices.");
   return game;
 }

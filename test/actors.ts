@@ -43,3 +43,19 @@ export function decisions(game: Game, person: string): (string | null)[] {
 export function tie(game: Game, person: string, other: string) {
   return read(game, person).ties.find((t) => t.otherId === other);
 }
+/** The offers this person finished, in order, from HF's own settled acts. */
+export function finished(game: Game, person: string): string[] {
+  const offers = new Map<string, string>();
+  const done: string[] = [];
+  for (const e of read(game, person).events) {
+    if (!("access" in e) || e.access !== "host") continue;
+    const data = e.data as { kind: string; [key: string]: unknown };
+    if (data.kind === "action-requested") {
+      const request = data.request as { activityId: string; offerId?: string };
+      if (request.offerId) offers.set(request.activityId, request.offerId);
+    }
+    if (data.kind === "action-settled" && data.disposition === "completed")
+      done.push(offers.get(data.activityId as string) ?? "");
+  }
+  return done;
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { choose, createGame, exportRun, hashGame, replay, view } from "../src/engine.ts";
-import { decisions, LEYLA, SELIN, tie } from "./actors.ts";
+import { decisions, finished, LEYLA, SELIN, tie } from "./actors.ts";
 
 const win = [
   "welcome",
@@ -118,6 +118,7 @@ it("cover preserves a visit hour but never makes travel free", () => {
   ]);
   expect(withHelp.helper).toBe(true);
   expect(decisions(withHelp, SELIN)).toEqual(["cover"]);
+  expect(finished(withHelp, SELIN)).toEqual(["cover"]);
   expect(view(withHelp).outcome).toBe("won");
   expect(view(rested).outcome).toBe("lost");
   expect(view(unsupported).outcome).toBe("lost");
@@ -237,6 +238,14 @@ it("continues identically from the live run and from the saved archive", () => {
   const live = choose(game, "compare");
   const restored = choose(game, "compare");
   expect(hashGame(restored)).toBe(hashGame(live));
+});
+
+it("checks a changed copy of the archive even while its live run is kept", () => {
+  const game = play(42, win.slice(0, 2));
+  const copy = JSON.parse(JSON.stringify(game));
+  copy.actors.current.people[LEYLA].body.satiety -= 0.01;
+  expect(() => choose(copy, win[2] ?? "")).toThrow(/hash-mismatch/);
+  expect(choose(game, win[2] ?? "").inputs).toEqual(win.slice(0, 3));
 });
 
 it("keeps the 64-choice limit for replay", () => {
