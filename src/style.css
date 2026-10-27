@@ -618,7 +618,18 @@ dialog input[type="checkbox"] {
 }
 @media (max-width: 700px) {
   .transcript:has(#opening-cast) {
-    padding-top: 4px;
+    padding-top: 0;
+    padding-bottom: 10px;
+  }
+  .stage:has(#opening-cast) .scene-heading {
+    padding-bottom: 8px;
+  }
+  .stage:has(#opening-cast) #choices {
+    padding-top: 6px;
+  }
+  #opening-cast {
+    font-size: 14px;
+    line-height: 1.45;
   }
   .transcript:has(#opening-cast) .transcript-label {
     display: none;
