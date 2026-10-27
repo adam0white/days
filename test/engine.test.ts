@@ -45,7 +45,9 @@ describe("Three Days complete runs", () => {
   it("has a loss that names the unresolved obligations", () => {
     const game = play(42, loss);
     expect(view(game).outcome).toBe("lost");
-    expect(view(game).text.join(" ")).toMatch(/account|promise|disclosure/);
+    expect(view(game).text.join(" ")).toMatch(
+      /Leyla closes the door, but (the account|the promised visit|the agreed later delivery|nobody has addressed)/,
+    );
   });
   it("distributes evidence between living people by seed", () => {
     expect(

@@ -298,7 +298,7 @@ function choiceCost(game: Game, id: string): string {
     push: "Save the hour; become more tired, which can add a checking or travel hour.",
     compare: `${comparisonHours(game)} ${comparisonHours(game) === 1 ? "hour" : "hours"} to obtain and check the original; no time to recuperate.`,
     guess: `${comparisonHours(game, true)} ${comparisonHours(game, true) === 1 ? "hour" : "hours"} for Burak's phone check; rest while he calls.`,
-    delegate: "Commit to a visit before departure; reserve the journey time.",
+    delegate: "Commit to a visit before departure; the journey will still need its hours later.",
     conceal: "Accept a later delivery; give up seeing Şükrü during this leave.",
     protect: game.privacy
       ? "1 hour; keep the notebook, copy the bill, and answer questions yourself."
@@ -384,7 +384,7 @@ function apply(game: Game, id: string): string {
     case "guess": {
       const hours = comparisonHours(game, id === "guess");
       if (!spend(game, hours))
-        return `The check needs ${hours} ${hours === 1 ? "hour" : "hours"}; only ${game.stretches} remain. Leyla cannot safely confirm the entries before departure.`;
+        return `The check needs ${hours} ${hours === 1 ? "hour" : "hours"}; only ${game.stretches} ${game.stretches === 1 ? "remains" : "remain"}. Leyla cannot safely confirm the entries before departure.`;
       game.checked = true;
       game.compared = true;
       if (id === "guess") game.fatigue = Math.max(0, game.fatigue - 1);
@@ -396,7 +396,7 @@ function apply(game: Game, id: string): string {
     case "conceal":
       game.visit = true;
       game.laterDelivery = true;
-      return "Şükrü agrees that Burak may bring the photograph and letter after Leyla leaves. He is disappointed not to see her. The later delivery still needs a named person, payment and a date.";
+      return "Şükrü agrees to receive the photograph and letter after Leyla leaves. He is disappointed not to see her. The later delivery still needs a carrier, payment and a date.";
     case "protect": {
       const hours = 1;
       if (!spend(game, hours))
@@ -408,7 +408,7 @@ function apply(game: Game, id: string): string {
     }
     case "publish":
       game.notebookKept = false;
-      return `Burak takes the ${game.privacy ? "closed notebook" : "notebook you read aloud"} to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later.${!game.privacy ? " This does not answer the earlier disclosure." : ""}`;
+      return `Burak takes the ${game.privacy ? "closed notebook" : "notebook Leyla read aloud"} to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later.${!game.privacy ? " This does not answer the earlier disclosure." : ""}`;
     case "name":
       game.named = game.compared && spend(game, 1);
       return game.named
@@ -425,7 +425,7 @@ function apply(game: Game, id: string): string {
       game.confirmed = game.visit && spend(game, hours);
       return game.confirmed
         ? `The visit happens and uses ${hours} ${hours === 1 ? "hour" : "hours"}.${tiredness(game) >= 3 ? " Leyla is tired; she keeps the visit short and rests before returning." : " Leyla has enough strength to stay awhile."} Şükrü receives the photograph and letter. He also names a borrowed folding table that Kemal never returned. Leyla records whom to contact; she does not excuse him.`
-        : `The visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${game.stretches} remain. Şükrü is still waiting. This promise needs an agreed delivery or a later answer.`;
+        : `The visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${game.stretches} ${game.stretches === 1 ? "remains" : "remain"}. Şükrü is still waiting. This promise needs an agreed delivery or a later answer.`;
     }
     case "leave":
       game.confirmed = game.visit && spend(game, 1);
@@ -438,13 +438,13 @@ function apply(game: Game, id: string): string {
       return "Selin stays to listen. Leyla says that her marriage ended and she wanted to tell Kemal. The conversation costs them both energy. Selin does not turn it into a lesson.";
     case "silent":
       game.fatigue = Math.max(0, game.fatigue - 1);
-      return "Selin does not press. Selin goes home. Leyla keeps that part of her life private and rests alone. The conversation remains unfinished; the account and the envelope do not require it.";
+      return "Selin does not press. She goes home. Leyla keeps that part of her life private and rests alone. The conversation remains unfinished; the account and the envelope do not require it.";
     case "close": {
       game.outcome =
         game.named && game.confirmed && (game.privacy || game.privacyManaged) ? "won" : "lost";
-      const history = `${!game.privacy ? (game.privacyManaged ? " A private page was read aloud. The agreement to limit its spread does not undo that harm." : " A private page was read aloud. Nobody has addressed the harm.") : " The private page stayed private."}${!game.notebookKept ? " Burak still has the notebook and owes its return." : ""}${game.paid ? " Burak still owes the mistaken first payment back to Leyla." : ""}`;
+      const history = `${!game.privacy ? (game.privacyManaged ? " A private page was read aloud. The agreement to limit its spread does not undo that harm." : "") : " The private page stayed private."}${!game.notebookKept && game.paid ? " Burak still has the notebook and owes its return, and he still owes Leyla the mistaken first payment." : !game.notebookKept ? " Burak still has the notebook and owes its return." : game.paid ? " Burak still owes Leyla the mistaken first payment." : ""}`;
       if (game.outcome === "won")
-        return `You leave with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
+        return `Leyla leaves with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
       const missing = [
         !game.named ? "the account is still disputed" : "",
         !game.confirmed
@@ -452,9 +452,11 @@ function apply(game: Game, id: string): string {
             ? "the agreed later delivery has not been paid for or assigned a date; Şükrü is still waiting for the photograph and letter"
             : "the promised visit has not happened; Şükrü is still waiting for the photograph and letter"
           : "",
-        !game.privacy && !game.privacyManaged ? "the disclosure has not been addressed" : "",
+        !game.privacy && !game.privacyManaged
+          ? "nobody has addressed the harm of reading the private page aloud"
+          : "",
       ].filter(Boolean);
-      return `You close the door, but ${missing.join("; ")}. There is still work to do after your leave.${history}`;
+      return `Leyla closes the door, but ${missing.join("; ")}. There is still work to do after her leave.${history}`;
     }
     default:
       throw new Error("Unknown action.");

@@ -16,7 +16,7 @@ it("asks the actual receipt holder for evidence without Burak asking for his own
     )!;
     const game = play(["welcome"], seed);
     expect(text(game)).toContain(`${holder} has the receipt`);
-    expect(text(game)).toContain(holder === "Burak" ? "Burak unfolds it" : `Burak asks ${holder}`);
+    expect(text(game)).toContain(holder === "Burak" ? "He unfolds it" : `Burak asks ${holder}`);
   }
 });
 
@@ -67,7 +67,7 @@ it("mentions Burak's repayment only after Leyla paid the mistaken demand", () =>
 
 it("lets Selin leave before Leyla rests alone", () => {
   const game = play([...prefix, "publish", "dismiss", "leave", "silent"]);
-  expect(text(game)).toContain("Selin goes home");
+  expect(text(game)).toContain("Selin does not press. She goes home.");
   expect(text(game)).not.toContain("beside her");
 });
 
@@ -329,14 +329,11 @@ it("keeps ending histories and unfinished tasks tied to what happened", () => {
     expect(text(final).includes("agreement to limit its spread")).toBe(
       page === "read" && notebook === "protect",
     );
-    expect(text(final).includes("Nobody has addressed the harm")).toBe(
-      page === "read" && notebook === "publish",
-    );
     expect(text(final).includes("still has the notebook")).toBe(notebook === "publish");
-    expect(text(final).includes("first payment back")).toBe(payment === "pay");
-    expect(text(final).includes("disclosure has not been addressed")).toBe(
-      page === "read" && notebook === "publish",
-    );
+    expect(text(final).includes("mistaken first payment")).toBe(payment === "pay");
+    expect(
+      text(final).includes("nobody has addressed the harm of reading the private page aloud"),
+    ).toBe(page === "read" && notebook === "publish");
     expect(replay(exportRun(final))).toEqual(final);
   }
   const visit = play([...prefix, "publish", "dismiss", "confirm", "silent", "close"]);
