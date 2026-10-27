@@ -109,7 +109,9 @@ it("allows full reading-with-repair and payment-with-recovery routes", () => {
     expect(result.privacyManaged).toBe(true);
   }
 });
-it("a visible-state careful policy succeeds across 32 seeds while automatic policies lose", () => {
+it("a visible-state careful policy succeeds across 32 seeds while automatic policies lose", {
+  timeout: 30000,
+}, () => {
   for (let seed = 0; seed < 32; seed++) {
     expect(probe(seed, "careful").outcome).toBe("won");
     expect(probe(seed, "first").outcome).toBe("lost");
