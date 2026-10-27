@@ -94,7 +94,16 @@ function render(focus = false) {
     summary.textContent = "How Leyla came home";
     const goalIndex = current.text.findIndex((line) => line.startsWith("Keep a clear account"));
     context.append(summary, ...paragraphs.filter((_, index) => index !== goalIndex));
-    get("text").replaceChildren(context, ...paragraphs.filter((_, index) => index === goalIndex));
+    // Phone only: the full opening is folded, so name who is in the room before the first choice.
+    const cast = document.createElement("p");
+    cast.id = "opening-cast";
+    cast.textContent =
+      "Leyla's father Kemal has died. Hacer has come to pay her respects. Burak, a visitor, is good with accounts. Şükrü was Kemal's colleague.";
+    get("text").replaceChildren(
+      cast,
+      context,
+      ...paragraphs.filter((_, index) => index === goalIndex),
+    );
   } else {
     get("text").replaceChildren(...paragraphs);
   }

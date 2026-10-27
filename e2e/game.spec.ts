@@ -172,6 +172,8 @@ test("the opening offers a whole first choice without scrolling", async ({ page 
   expect(box!.y + box!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   await expect(page.getByText(/^Keep a clear account/)).toBeVisible();
   if (page.viewportSize()!.width <= 700) {
+    await expect(page.locator("#opening-cast")).toBeInViewport();
+    await expect(page.locator("#opening-cast")).toContainText("Hacer has come to pay her respects");
     await page.getByText("How Leyla came home", { exact: true }).click();
   }
   await expect(page.getByText(/Kemal's coat still hangs/)).toBeVisible();
