@@ -60,6 +60,18 @@ it("carries a person through a fresh play and replays without reading the shelf"
   expect(game.actors.current.people[castId]!.body.satiety).toBeCloseTo(0.41);
   const claim = state.revisions.find((p) => p.revision === state.heads[castId])!;
   expect(claim.parentRevision).toBe(parent.revision);
+  expect(claim.transfer.portableClaim).toEqual({ game: "days" });
+  const voiceActor = { ...game.actors.current.people[castId]!, id: "hacer" };
+  expect(() =>
+    projectPortablePerson({
+      castId,
+      game: "voice",
+      engine: "4.0.0",
+      person: voiceActor,
+      history: [],
+      previous: claim,
+    }),
+  ).toThrow(/belongs to another chapter/);
   expect(validatePortablePerson(claim.transfer.portable).state.body.satiety).toBeCloseTo(
     game.actors.current.people[castId]!.body.satiety,
   );
@@ -84,6 +96,7 @@ it("carries a person through a fresh play and replays without reading the shelf"
   await checkpointContinuity(shelf, game, () => true);
   const checkpoint = state.revisions.find((p) => p.revision === state.heads[castId])!;
   expect(checkpoint.parentRevision).toBe(claim.revision);
+  expect(checkpoint.transfer.portableClaim).toBeUndefined();
   expect(validatePortablePerson(checkpoint.transfer.portable).state.body.satiety).toBeCloseTo(
     game.actors.current.people[castId]!.body.satiety,
   );
@@ -143,3 +156,123 @@ it("enables the shared shelf for a first play on the game origin", async () => {
   shelf.enabled = false;
   expect(await continuity.enableContinuity(shelf, "https://example.com")).toBe(false);
 });
+
+it("does not create a Burak delivery duty when the delivery attempt has no hour", async () => {
+  const { checkpointContinuity } = await import("../src/continuity.ts");
+  const { choose } = await import("../src/engine.ts");
+  let game = createGame(42);
+  game.chapter = { claims: [], startedAt: 1, completed: false };
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "hide",
+    "rest",
+    "compare",
+    "delegate",
+    "protect",
+    "dismiss",
+  ])
+    game = choose(game, id);
+  // Use the game's existing host hour counter to exercise a refused agreement.
+  game.stretches = 0;
+  game = choose(game, "leave");
+  expect(game.confirmed).toBe(false);
+  for (const id of ["silent", "close"]) game = choose(game, id);
+  let writes = 0;
+  const shelf = {
+    async request<T>(): Promise<T> {
+      writes++;
+      return undefined as T;
+    },
+  };
+  await expect(checkpointContinuity(shelf, game, () => true)).resolves.toBeUndefined();
+  expect(writes).toBe(1);
+}, 60_000);
+
+it("refuses an older successful-delivery save that lacks the agreed-delivery fact", async () => {
+  const { choose, exportRun, hashGame, replay } = await import("../src/engine.ts");
+  let game = createGame(42);
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "ask",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "dismiss",
+    "leave",
+    "speak",
+    "close",
+  ])
+    game = choose(game, id);
+  expect(game.deliveryAssigned).toBe(true);
+  const old = exportRun(game);
+  delete old.state.deliveryAssigned;
+  old.hash = hashGame(old.state);
+  expect(() => replay(old)).toThrow(/earlier Three Days build.*delivery.*Start a new play/);
+});
+
+it("does not assign a delivery when leave is refused and Leyla later makes the visit", async () => {
+  const {
+    exportRun: exportArchive,
+    restoreRun,
+    step,
+  } = await import("@adam0white/human-framework");
+  const { checkpointContinuity } = await import("../src/continuity.ts");
+  const { choose } = await import("../src/engine.ts");
+  let game = createGame(42);
+  game.chapter = { claims: [], startedAt: 1, completed: false };
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "ask",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "dismiss",
+  ])
+    game = choose(game, id);
+  const changeBody = (
+    receipt: { type: "fallen"; cause: string } | { type: "stood"; actionReceipt: string },
+  ) => {
+    const run = restoreRun(game.actors);
+    if (!run.ok) throw new Error("Unable to restore test run");
+    const at = game.actors.current.at + 60_000;
+    const result = step(run.value, {
+      until: at,
+      inputs: [
+        {
+          id: `test:${receipt.type}`,
+          at,
+          source: { type: "host", id: "days" },
+          kind: "body.received",
+          payload: { person: "hf.cast.leyla.days", evidenceId: `test:${receipt.type}`, receipt },
+        },
+      ],
+    });
+    if (!result.ok) throw new Error(result.error.message);
+    game.actors = exportArchive(run.value);
+  };
+  changeBody({ type: "fallen", cause: "test" });
+  game = choose(game, "leave");
+  expect(game.refused).toBe(true);
+  changeBody({ type: "stood", actionReceipt: "test:stand" });
+  game = choose(game, "confirm");
+  expect(game.confirmed).toBe(true);
+  for (const id of ["speak", "close"]) game = choose(game, id);
+  expect(game.text.join(" ")).toContain("The visit was kept.");
+  let writes = 0;
+  const shelf = {
+    async request<T>(): Promise<T> {
+      writes++;
+      return undefined as T;
+    },
+  };
+  await expect(checkpointContinuity(shelf, game, () => true)).resolves.toBeUndefined();
+  expect(writes).toBe(1);
+}, 60_000);

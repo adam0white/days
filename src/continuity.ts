@@ -125,7 +125,7 @@ export async function checkpointContinuity(
           ? [
               ...(!game.notebookKept ? ["return Leyla's notebook"] : []),
               ...(game.paid ? ["return Leyla's mistaken payment"] : []),
-              ...(game.inputs.includes("leave") ? ["deliver the photograph and letter"] : []),
+              ...(game.deliveryAssigned ? ["deliver the photograph and letter"] : []),
               ...(game.named && game.inputs.includes("name")
                 ? ["follow up with the estate contact"]
                 : []),

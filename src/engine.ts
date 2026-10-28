@@ -63,6 +63,8 @@ export interface Game {
   privacyManaged: boolean;
   notebookKept: boolean;
   laterDelivery: boolean;
+  /** Whether a delivery attempt resulted in an agreement with Burak. */
+  deliveryAssigned?: boolean;
   refused: boolean;
   ink: string;
   /** The HF 4 run archive: spec, input log, current state and hashes. */
@@ -875,6 +877,7 @@ function apply(run: Actors, game: Game, id: string): string {
     }
     case "leave":
       game.confirmed = game.visit && spend(game, 1);
+      if (game.confirmed) game.deliveryAssigned = true;
       return game.confirmed
         ? "Leyla spends an hour arranging and paying for Burak to deliver the photograph and letter. Şükrü agrees to the date and Burak accepts the task. Leyla gives up the visit herself; the handoff is agreed, and the later delivery is still to happen."
         : "No paid delivery can be confirmed without Şükrü's agreement and an hour to arrange it. The envelope leaves with Leyla.";
@@ -890,7 +893,7 @@ function apply(run: Actors, game: Game, id: string): string {
         game.named && game.confirmed && (game.privacy || game.privacyManaged) ? "won" : "lost";
       const history = `${!game.privacy ? (game.privacyManaged ? " A private page was read aloud. The agreement to limit its spread does not undo that harm." : "") : " The private page stayed private."}${!game.notebookKept && game.paid ? " Burak still has the notebook and owes its return, and he still owes Leyla the mistaken first payment." : !game.notebookKept ? " Burak still has the notebook and owes its return." : game.paid ? " Burak still owes Leyla the mistaken first payment." : ""}`;
       if (game.outcome === "won")
-        return `Leyla leaves with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
+        return `Leyla leaves with a clear account and a named next step. ${game.deliveryAssigned ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
       const missing = [
         !game.named ? "the account is still disputed" : "",
         !game.confirmed
@@ -913,6 +916,7 @@ export function choose(input: Game, id: string): Game {
     throw new Error("This run cannot take that choice.");
   if (input.inputs.length >= MAX_INPUTS) throw new Error("This run has reached its choice limit.");
   const game = clone(input);
+  if (id === "leave" && game.deliveryAssigned === undefined) game.deliveryAssigned = false;
   const story = runtime(game);
   const index = game.choices.findIndex((c) => c.id === id);
   if (
@@ -1004,6 +1008,10 @@ export function replay(input: Run): Game {
   let game = createGame(input.seed, input.state.carry ?? []);
   if (input.state.chapter) game.chapter = clone(input.state.chapter);
   for (const id of input.inputs) game = choose(game, id);
+  if (game.deliveryAssigned !== undefined && input.state.deliveryAssigned === undefined)
+    throw new Error(
+      "This play was saved by an earlier Three Days build and includes a delivery attempt that cannot be checked under the new rules. Start a new play.",
+    );
   if (
     hashGame(game) !== input.hash ||
     hashGame(input.state) !== input.hash ||
