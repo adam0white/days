@@ -1,5 +1,6 @@
-import { createLab } from "@adam0white/lab-client";
-import { choose, createGame, exportRun, hashGame, replay, view } from "./engine.ts";
+import { createLab, personaChannel } from "@adam0white/lab-client";
+import { checkpointContinuity, restartFreshGame, startFreshGame } from "./continuity.ts";
+import { choose, createGame, exportRun, hashGame, replay, sharedCast, view } from "./engine.ts";
 import type { mountRoom } from "./room.ts";
 import "./style.css";
 
@@ -23,6 +24,7 @@ function store(key: string, value: string) {
   }
 }
 const lab = createLab({ game: "days" });
+const shelf = personaChannel();
 const menu = get<HTMLDialogElement>("menu-dialog");
 const notice = get<HTMLDialogElement>("notice");
 const recording = get<HTMLInputElement>("recording");
@@ -33,10 +35,12 @@ const storageKey = "days-run-v1";
 const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
 let game = createGame(newSeed());
 let loadNotice = "";
+let restored = false;
 const saved = read(storageKey);
 if (saved) {
   try {
     game = replay(JSON.parse(saved));
+    restored = true;
   } catch (error) {
     // A save this build cannot replay is never repaired; the player starts fresh and is told why.
     loadNotice =
@@ -48,7 +52,54 @@ if (saved) {
 }
 let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
 let disposed = false;
-let busy = false;
+let busy = true;
+let generation = 0;
+async function fresh(focus = false) {
+  const current = ++generation;
+  busy = true;
+  const seed = newSeed();
+  let retained = false;
+  try {
+    if (focus) {
+      const restart = await restartFreshGame(shelf, game, seed, () => current === generation);
+      game = restart.game;
+      retained = restart.retained;
+      if (retained)
+        loadNotice =
+          "A new play could not start. Your current play and any saved progress are kept.";
+    } else {
+      game = await startFreshGame(shelf, seed, () => current === generation);
+    }
+  } catch {
+    game = createGame(seed);
+    loadNotice =
+      "Continuity could not be confirmed. This play starts locally; check the shelf before trying again.";
+  } finally {
+    busy = false;
+  }
+  if (!retained) save();
+  render(focus && !retained);
+  return !retained;
+}
+async function checkpoint() {
+  if (!game.chapter || game.chapter.completed || game.outcome === "playing") return;
+  const finished = game;
+  const current = generation;
+  busy = true;
+  try {
+    await checkpointContinuity(shelf, finished, () => current === generation && game === finished);
+    finished.chapter!.completed = true;
+    save();
+  } catch (error) {
+    loadNotice =
+      error instanceof Error && error.message.startsWith("Burak has unfinished obligations")
+        ? error.message
+        : "Continuity could not be confirmed. Check the shelf before starting another play.";
+  } finally {
+    busy = false;
+    render();
+  }
+}
 function save() {
   store(storageKey, JSON.stringify(exportRun(game)));
 }
@@ -84,6 +135,14 @@ phoneLayout.addEventListener("change", () => {
 });
 function render(focus = false) {
   const current = view(game);
+  const skipped = game.chapter?.skipped ?? [];
+  const continuityNotice = skipped
+    .map((id) => ["Hacer", "Burak", "Selin"][sharedCast.indexOf(id)] ?? "A character")
+    .map(
+      (name) => `${name}'s shared history is in another chapter; this play uses a local version.`,
+    )
+    .join(" ");
+  const displayNotice = [loadNotice, continuityNotice].filter(Boolean).join(" ");
   scene.dataset.outcome = current.outcome;
   get("progress").textContent = current.progress;
   get("title").textContent = current.title;
@@ -107,15 +166,17 @@ function render(focus = false) {
       "Leyla's father Kemal has died. Hacer has come to pay her respects. Burak, a visitor, is good with accounts. Şükrü was Kemal's colleague.";
     const notice = document.createElement("p");
     notice.id = "save-notice";
-    notice.textContent = loadNotice;
+    notice.textContent = displayNotice;
     get("text").replaceChildren(
-      ...(loadNotice ? [notice] : []),
+      ...(displayNotice ? [notice] : []),
       cast,
       context,
       ...paragraphs.filter((_, index) => index === goalIndex),
     );
   } else {
-    get("text").replaceChildren(...paragraphs);
+    const status = document.createElement("p");
+    status.textContent = displayNotice;
+    get("text").replaceChildren(...paragraphs, ...(displayNotice ? [status] : []));
   }
   get("room-instruction").textContent =
     current.outcome === "playing"
@@ -174,6 +235,7 @@ function render(focus = false) {
         } finally {
           busy = false;
         }
+        if (game.outcome !== "playing") void checkpoint();
       });
       return button;
     }),
@@ -255,12 +317,12 @@ get("cancel-restart").addEventListener("click", () => {
   get("restart-confirm").hidden = true;
 });
 get("restart").addEventListener("click", () => {
-  game = createGame(newSeed());
+  if (busy) return;
   loadNotice = "";
-  lab.captureSave(exportRun(game));
-  save();
   menu.close();
-  render(true);
+  void fresh(true).then((started) => {
+    if (started) lab.captureSave(exportRun(game));
+  });
 });
 get("submit-feedback").addEventListener("click", async () => {
   const note = feedbackNote.value.trim();
@@ -344,6 +406,12 @@ get("begin-off").addEventListener("click", () => begin(true));
   diagnostics.append(check, status);
 }
 render();
+if (restored) {
+  busy = false;
+  void checkpoint();
+} else {
+  void fresh();
+}
 if (read("days-notice-v1") !== "1") notice.showModal();
 window.addEventListener("pagehide", () => {
   save();

@@ -19,11 +19,17 @@ import {
   restoreRun,
   type StepResult,
 } from "@adam0white/human-framework";
+import {
+  admitPortablePerson,
+  type LifePreparation,
+  type PersonaEnvelope,
+  portablePassport,
+} from "@adam0white/lab-client";
 import { Story } from "inkjs";
 import compiled from "./story.json" with { type: "json" };
 import type { GameView, Outcome } from "./types.ts";
 
-// HF 4.0.0 run API (pinned 2026-10-27). HF owns the five people: their bodies, needs,
+// HF 4 run API. HF owns the five people: their bodies, needs,
 // decisions and ties. The host owns the room, hours, savings, the notebook, the account,
 // the promise and whether an act physically succeeded. Every host fact that a person
 // should know enters as a timestamped input; every reading leaves through `inspect`.
@@ -41,9 +47,18 @@ const REFUSAL_PAUSE = 20 * MINUTE;
 const MAX_INPUTS = 64;
 const names = ["Leyla", "Hacer", "Burak", "Selin", "Şükrü"];
 const ids = [LEYLA, "hf.cast.hacer.voice", "hf.cast.burak.stairwell", SELIN, "hf.cast.sukru.days"];
+export const sharedCast = [ids[1]!, ids[2]!, ids[3]!];
 export interface Game {
   version: string;
   seed: number;
+  /** Complete fresh-chapter inputs, pinned for deterministic replay. */
+  carry?: LifePreparation[];
+  chapter?: {
+    claims: PersonaEnvelope[];
+    startedAt: number;
+    completed: boolean;
+    skipped?: string[];
+  };
   inputs: string[];
   step: number;
   stretches: number;
@@ -53,9 +68,13 @@ export interface Game {
   privacyManaged: boolean;
   notebookKept: boolean;
   laterDelivery: boolean;
+  /** Whether a delivery attempt resulted in an agreement with Burak. */
+  deliveryAssigned?: boolean;
+  /** Whether an attempted estate record created Burak's follow-up. */
+  estateFollowup?: boolean;
   refused: boolean;
   ink: string;
-  /** The HF 4.0 run archive: spec, input log, current state and hashes. */
+  /** The HF 4 run archive: spec, input log, current state and hashes. */
   actors: DeepReadonly<RunArchive>;
   /** Host revision for the offers it gives each person. */
   offerRevision: number;
@@ -320,9 +339,24 @@ function authored(i: number): PersonAuthoring {
     },
   };
 }
-function opening(seed: number): Actors {
+function opening(seed: number, carry: LifePreparation[]): Actors {
   const run = need(createRun(spec(seed)));
-  for (let i = 0; i < ids.length; i++) need(createPerson(run, authored(i)));
+  const seen = new Set<string>();
+  for (const input of carry) {
+    if (
+      !sharedCast.includes(input.parent.castId) ||
+      seen.has(input.parent.castId) ||
+      !portablePassport(input.parent)
+    )
+      throw new Error("This character cannot enter Three Days.");
+    seen.add(input.parent.castId);
+  }
+  for (let i = 0; i < ids.length; i++) {
+    const parent = carry.find((input) => input.parent.castId === ids[i])?.parent;
+    need(
+      createPerson(run, parent ? admitPortablePerson(parent, "days", authored(i)) : authored(i)),
+    );
+  }
   // Everyone in the room hears of the death through one input; HF words it from the lexicon.
   need(
     advance(run, {
@@ -407,14 +441,16 @@ function collect(game: Game, story: Story, consequence?: string) {
     );
   }
 }
-export function createGame(seed: number): Game {
+export function createGame(seed: number, carry: LifePreparation[] = []): Game {
   if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xffffffff)
     throw new Error("Use a whole seed from 0 to 4294967295.");
   const draw = hostDraws(seed);
-  const run = opening(seed);
+  const pinned = clone(carry);
+  const run = opening(seed, pinned);
   const game: Game = {
     version: VERSION,
     seed,
+    ...(pinned.length ? { carry: pinned } : {}),
     inputs: [],
     step: 0,
     stretches: 6,
@@ -830,6 +866,7 @@ function apply(run: Actors, game: Game, id: string): string {
       return `Burak takes the ${game.privacy ? "closed notebook" : "notebook Leyla read aloud"} to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later.${!game.privacy ? " This does not answer the earlier disclosure." : ""}`;
     case "name":
       game.named = game.compared && spend(game, 1);
+      if (game.named) game.estateFollowup = true;
       return game.named
         ? "Leyla spends an hour recording Şükrü's claim and Burak's agreed next step with the estate contact. She keeps her savings and accepts that this follow-up will continue after leave."
         : `The account cannot be recorded safely: ${!game.compared ? "the entries are unconfirmed" : "no writing hour remains"}.`;
@@ -848,6 +885,7 @@ function apply(run: Actors, game: Game, id: string): string {
     }
     case "leave":
       game.confirmed = game.visit && spend(game, 1);
+      if (game.confirmed) game.deliveryAssigned = true;
       return game.confirmed
         ? "Leyla spends an hour arranging and paying for Burak to deliver the photograph and letter. Şükrü agrees to the date and Burak accepts the task. Leyla gives up the visit herself; the handoff is agreed, and the later delivery is still to happen."
         : "No paid delivery can be confirmed without Şükrü's agreement and an hour to arrange it. The envelope leaves with Leyla.";
@@ -863,7 +901,7 @@ function apply(run: Actors, game: Game, id: string): string {
         game.named && game.confirmed && (game.privacy || game.privacyManaged) ? "won" : "lost";
       const history = `${!game.privacy ? (game.privacyManaged ? " A private page was read aloud. The agreement to limit its spread does not undo that harm." : "") : " The private page stayed private."}${!game.notebookKept && game.paid ? " Burak still has the notebook and owes its return, and he still owes Leyla the mistaken first payment." : !game.notebookKept ? " Burak still has the notebook and owes its return." : game.paid ? " Burak still owes Leyla the mistaken first payment." : ""}`;
       if (game.outcome === "won")
-        return `Leyla leaves with a clear account and a named next step. ${game.inputs.includes("leave") ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
+        return `Leyla leaves with a clear account and a named next step. ${game.deliveryAssigned ? "The delivery has an agreed person and date; it has not happened yet." : "The visit was kept."} These tasks are settled for departure; grief is not.${history}`;
       const missing = [
         !game.named ? "the account is still disputed" : "",
         !game.confirmed
@@ -886,6 +924,8 @@ export function choose(input: Game, id: string): Game {
     throw new Error("This run cannot take that choice.");
   if (input.inputs.length >= MAX_INPUTS) throw new Error("This run has reached its choice limit.");
   const game = clone(input);
+  if (id === "leave" && game.deliveryAssigned === undefined) game.deliveryAssigned = false;
+  if (id === "name" && game.estateFollowup === undefined) game.estateFollowup = false;
   const story = runtime(game);
   const index = game.choices.findIndex((c) => c.id === id);
   if (
@@ -974,8 +1014,17 @@ export function replay(input: Run): Game {
     typeof input.hash !== "string"
   )
     throw new Error("This export is not a supported Three Days run.");
-  let game = createGame(input.seed);
+  let game = createGame(input.seed, input.state.carry ?? []);
+  if (input.state.chapter) game.chapter = clone(input.state.chapter);
   for (const id of input.inputs) game = choose(game, id);
+  if (game.deliveryAssigned !== undefined && input.state.deliveryAssigned === undefined)
+    throw new Error(
+      "This play was saved by an earlier Three Days build and includes a delivery attempt that cannot be checked under the new rules. Start a new play.",
+    );
+  if (game.estateFollowup !== undefined && input.state.estateFollowup === undefined)
+    throw new Error(
+      "This play was saved by an earlier Three Days build and includes an estate follow-up attempt that cannot be checked under the new rules. Start a new play.",
+    );
   if (
     hashGame(game) !== input.hash ||
     hashGame(input.state) !== input.hash ||
