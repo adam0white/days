@@ -254,3 +254,8 @@ it("keeps the 64-choice limit for replay", () => {
     /not a supported/,
   );
 });
+
+it("refuses the prior HF 4.0 save with an explicit start-fresh message", () => {
+  const old = exportRun(createGame(42));
+  expect(() => replay({ ...old, version: "three-days-3" })).toThrow(/earlier.*Start a new play/);
+});
