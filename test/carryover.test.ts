@@ -87,13 +87,8 @@ it("carries a person through a fresh play and replays without reading the shelf"
   expect(unsafeEnding.outcome).not.toBe("playing");
   expect(unsafeEnding.paid).toBe(true);
   await expect(checkpointContinuity(shelf, unsafeEnding, () => true)).rejects.toThrow(/Burak/);
-  let refusedFresh = false;
-  try {
-    await startContinuity(shelf, 43, () => true);
-  } catch {
-    refusedFresh = true;
-  }
-  expect(refusedFresh).toBe(true);
+  const fresh = await startContinuity(shelf, 43, () => true);
+  expect(fresh.chapter?.skipped).toContain(castId);
   expect(state.heads[castId]).toBe(claim.revision);
   const restart = await restartFreshGame(shelf, unsafeEnding, 43, () => true);
   expect(restart.retained).toBe(true);
@@ -496,3 +491,117 @@ it("refuses an older estate-attempt save that lacks the agreement fact", async (
     /earlier Three Days build.*estate follow-up attempt.*Start a new play/,
   );
 });
+
+it.each(["native", "dead"])(
+  "skips %s Hacer and plays with carried Burak",
+  async (kind) => {
+    const {
+      acceptPersonaBatch,
+      canonicalCast,
+      createPersona,
+      initialPersonaLife,
+      preparePersonaLife,
+      projectPortablePerson,
+    } = await import("@adam0white/lab-client");
+    const { startContinuity, checkpointContinuity } = await import("../src/continuity.ts");
+    const { choose, exportRun, replay, sharedCast } = await import("../src/engine.ts");
+    const base = createGame(42);
+    const parentFor = async (castId: string, foreignLock: boolean) => {
+      const person = JSON.parse(JSON.stringify(base.actors.current.people[castId]));
+      if (castId === sharedCast[1]) person.body.satiety = 0.41;
+      const branchId = `test-${castId}`;
+      return createPersona({
+        format: "hf-persona/1",
+        castId,
+        castRevision: canonicalCast(castId).revision,
+        branchId,
+        parentRevision: null,
+        source: { game: "days", build: "test", engine: "4.0.0", rules: "test" },
+        transfer: {
+          ...projectPortablePerson({
+            castId,
+            game: "days",
+            engine: "4.0.0",
+            person,
+            history: [],
+          }),
+          life: initialPersonaLife(castId, branchId, Date.now()),
+          ...(foreignLock ? { portableClaim: { game: "voice" } } : {}),
+        },
+        limitations: [],
+      });
+    };
+    const hacerBase = await parentFor(sharedCast[0]!, false);
+    const { revision: _revision, ...body } = hacerBase;
+    const hacer = await createPersona({
+      ...body,
+      source: { game: "voice", build: "test", engine: "4.0.0", rules: "test" },
+      transfer: { life: hacerBase.transfer.life, castPassport: "site-cast/1", sourceRole: "hacer" },
+      ...(kind === "dead" ? { terminal: { kind: "dead" as const, at: 1 } } : {}),
+    });
+    const burak = await parentFor(sharedCast[1]!, false);
+    let state: import("@adam0white/lab-client").PersonaShelfState = {
+      revisions: [hacer, burak],
+      heads: { [hacer.castId]: hacer.revision, [burak.castId]: burak.revision },
+    };
+    const batches: import("@adam0white/lab-client").PersonaRequest[] = [];
+    const shelf = {
+      async request<T>(request: import("@adam0white/lab-client").PersonaRequest): Promise<T> {
+        if (request.action === "prepareBatch") {
+          const inputs: ReturnType<typeof preparePersonaLife>[] = [];
+          const blocked: { castId: string; reason: string }[] = [];
+          for (const parent of state.revisions.filter(
+            (p) => state.heads[p.castId] === p.revision,
+          )) {
+            try {
+              inputs.push(preparePersonaLife(parent, Date.now()));
+            } catch (error) {
+              blocked.push({ castId: parent.castId, reason: String(error) });
+            }
+          }
+          return {
+            inputs,
+            blocked,
+            expectedHeads: Object.fromEntries(
+              sharedCast.map((id) => [id, state.heads[id] ?? null]),
+            ),
+          } as T;
+        }
+        if (request.action === "putBatch") {
+          batches.push(request);
+          state = acceptPersonaBatch(state, request.envelopes ?? [], request.expectedHeads);
+          return undefined as T;
+        }
+        throw new Error("Unexpected shelf request");
+      },
+    };
+    let game = await startContinuity(shelf, 42, () => true);
+    expect(game.chapter?.skipped).toContain(hacer.castId);
+    expect(game.actors.current.people[burak.castId]!.body.satiety).toBeCloseTo(0.41);
+    expect(state.heads[hacer.castId]).toBe(hacer.revision);
+    expect(state.heads[burak.castId]).not.toBe(burak.revision);
+    for (const id of [
+      "welcome",
+      "check",
+      "private",
+      "ask",
+      "push",
+      "compare",
+      "delegate",
+      "protect",
+      "dismiss",
+      "confirm",
+      "speak",
+      "close",
+    ])
+      game = choose(game, id);
+    await checkpointContinuity(shelf, game, () => true);
+    expect(replay(JSON.parse(JSON.stringify(exportRun(game))))).toEqual(game);
+    expect(batches.at(-1)?.expectedHeads).not.toHaveProperty(hacer.castId);
+    expect(batches.at(-1)?.envelopes?.map((p) => p.castId)).not.toContain(hacer.castId);
+    expect(state.heads[hacer.castId]).toBe(hacer.revision);
+    expect(state.heads[burak.castId]).not.toBe(burak.revision);
+    expect(state.heads[sharedCast[2]!]).toBeDefined();
+  },
+  60_000,
+);
