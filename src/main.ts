@@ -1,5 +1,5 @@
 import { createLab, personaChannel } from "@adam0white/lab-client";
-import { checkpointContinuity, startFreshGame } from "./continuity.ts";
+import { checkpointContinuity, restartFreshGame, startFreshGame } from "./continuity.ts";
 import { choose, createGame, exportRun, hashGame, replay, sharedCast, view } from "./engine.ts";
 import type { mountRoom } from "./room.ts";
 import "./style.css";
@@ -58,8 +58,18 @@ async function fresh(focus = false) {
   const current = ++generation;
   busy = true;
   const seed = newSeed();
+  let retained = false;
   try {
-    game = await startFreshGame(shelf, seed, () => current === generation);
+    if (focus) {
+      const restart = await restartFreshGame(shelf, game, seed, () => current === generation);
+      game = restart.game;
+      retained = restart.retained;
+      if (retained)
+        loadNotice =
+          "A new play could not start. Your current play and any saved progress are kept.";
+    } else {
+      game = await startFreshGame(shelf, seed, () => current === generation);
+    }
   } catch {
     game = createGame(seed);
     loadNotice =
@@ -67,8 +77,9 @@ async function fresh(focus = false) {
   } finally {
     busy = false;
   }
-  save();
-  render(focus);
+  if (!retained) save();
+  render(focus && !retained);
+  return !retained;
 }
 async function checkpoint() {
   if (!game.chapter || game.chapter.completed || game.outcome === "playing") return;
@@ -309,7 +320,9 @@ get("restart").addEventListener("click", () => {
   if (busy) return;
   loadNotice = "";
   menu.close();
-  void fresh(true).then(() => lab.captureSave(exportRun(game)));
+  void fresh(true).then((started) => {
+    if (started) lab.captureSave(exportRun(game));
+  });
 });
 get("submit-feedback").addEventListener("click", async () => {
   const note = feedbackNote.value.trim();

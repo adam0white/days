@@ -28,6 +28,28 @@ export async function startFreshGame(
   return shelf.enabled ? startContinuity(shelf, seed, isCurrent) : createGame(seed);
 }
 
+/** A refused restart must leave the only resumable chapter intact. */
+export async function restartFreshGame(
+  shelf: CastShelf & { readonly ready: Promise<boolean>; readonly enabled: boolean },
+  previous: Game,
+  seed: number,
+  isCurrent: () => boolean,
+): Promise<{ game: Game; retained: boolean }> {
+  try {
+    await shelf.ready;
+    if (
+      !shelf.enabled &&
+      previous.chapter &&
+      !previous.chapter.completed &&
+      previous.chapter.claims.length
+    )
+      return { game: previous, retained: true };
+    return { game: await startFreshGame(shelf, seed, isCurrent), retained: false };
+  } catch {
+    return { game: previous, retained: true };
+  }
+}
+
 function projection(
   game: Game,
   castId: string,

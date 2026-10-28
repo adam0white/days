@@ -15,7 +15,9 @@ it("carries a person through a fresh play and replays without reading the shelf"
     projectPortablePerson,
     validatePortablePerson,
   } = await import("@adam0white/lab-client");
-  const { startContinuity, checkpointContinuity } = await import("../src/continuity.ts");
+  const { startContinuity, checkpointContinuity, restartFreshGame } = await import(
+    "../src/continuity.ts"
+  );
   const { choose, exportRun, replay, sharedCast } = await import("../src/engine.ts");
   const castId = sharedCast[1]!;
   const person = JSON.parse(JSON.stringify(createGame(42).actors.current.people[castId]!));
@@ -40,6 +42,8 @@ it("carries a person through a fresh play and replays without reading the shelf"
   };
   let reads = 0;
   const shelf = {
+    enabled: true,
+    ready: Promise.resolve(true),
     async request<T>(request: import("@adam0white/lab-client").PersonaRequest): Promise<T> {
       if (request.action === "prepareBatch") {
         reads++;
@@ -91,6 +95,17 @@ it("carries a person through a fresh play and replays without reading the shelf"
   }
   expect(refusedFresh).toBe(true);
   expect(state.heads[castId]).toBe(claim.revision);
+  const restart = await restartFreshGame(shelf, unsafeEnding, 43, () => true);
+  expect(restart.retained).toBe(true);
+  expect(restart.game).toBe(unsafeEnding);
+  expect(state.heads[castId]).toBe(claim.revision);
+  shelf.enabled = false;
+  const readsBeforeDisabledRestart = reads;
+  const disabledRestart = await restartFreshGame(shelf, unsafeEnding, 43, () => true);
+  expect(disabledRestart.game).toBe(unsafeEnding);
+  expect(disabledRestart.retained).toBe(true);
+  expect(reads).toBe(readsBeforeDisabledRestart);
+  shelf.enabled = true;
   const otherActor = game.actors.current.people[castId];
   expect(() =>
     projectPortablePerson({
