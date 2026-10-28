@@ -70,6 +70,8 @@ export interface Game {
   laterDelivery: boolean;
   /** Whether a delivery attempt resulted in an agreement with Burak. */
   deliveryAssigned?: boolean;
+  /** Whether an attempted estate record created Burak's follow-up. */
+  estateFollowup?: boolean;
   refused: boolean;
   ink: string;
   /** The HF 4 run archive: spec, input log, current state and hashes. */
@@ -864,6 +866,7 @@ function apply(run: Actors, game: Game, id: string): string {
       return `Burak takes the ${game.privacy ? "closed notebook" : "notebook Leyla read aloud"} to copy the bill in private. Leyla saves the hour of doing that work herself, but will leave without her father's notebook. He agrees to return it later.${!game.privacy ? " This does not answer the earlier disclosure." : ""}`;
     case "name":
       game.named = game.compared && spend(game, 1);
+      if (game.named) game.estateFollowup = true;
       return game.named
         ? "Leyla spends an hour recording Şükrü's claim and Burak's agreed next step with the estate contact. She keeps her savings and accepts that this follow-up will continue after leave."
         : `The account cannot be recorded safely: ${!game.compared ? "the entries are unconfirmed" : "no writing hour remains"}.`;
@@ -922,6 +925,7 @@ export function choose(input: Game, id: string): Game {
   if (input.inputs.length >= MAX_INPUTS) throw new Error("This run has reached its choice limit.");
   const game = clone(input);
   if (id === "leave" && game.deliveryAssigned === undefined) game.deliveryAssigned = false;
+  if (id === "name" && game.estateFollowup === undefined) game.estateFollowup = false;
   const story = runtime(game);
   const index = game.choices.findIndex((c) => c.id === id);
   if (
@@ -1016,6 +1020,10 @@ export function replay(input: Run): Game {
   if (game.deliveryAssigned !== undefined && input.state.deliveryAssigned === undefined)
     throw new Error(
       "This play was saved by an earlier Three Days build and includes a delivery attempt that cannot be checked under the new rules. Start a new play.",
+    );
+  if (game.estateFollowup !== undefined && input.state.estateFollowup === undefined)
+    throw new Error(
+      "This play was saved by an earlier Three Days build and includes an estate follow-up attempt that cannot be checked under the new rules. Start a new play.",
     );
   if (
     hashGame(game) !== input.hash ||

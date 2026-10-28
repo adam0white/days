@@ -25,4 +25,6 @@ When shared continuity is on, a fresh play admits Hacer, Burak and Selin from th
 
 If someone is still continuing in another game, their shared history stays there while the other available people can continue in Days. The play names anyone who could not join from the shelf.
 
+Older saved plays that attempted a delivery or an estate record lack the new agreement facts and require a fresh play.
+
 Code is MIT. Religious source records remain in the HF repository; this game supplies no religious rulings.

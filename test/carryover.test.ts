@@ -405,3 +405,79 @@ it("keeps a person locked elsewhere while carrying the rest of the cast", async 
   expect(state.heads[burak.castId]).not.toBe(burak.revision);
   expect(state.heads[sharedCast[2]!]).toBeDefined();
 }, 60_000);
+
+it("does not invent estate follow-up after a refused name attempt and successful dismissal", async () => {
+  const {
+    exportRun: exportArchive,
+    restoreRun,
+    step,
+  } = await import("@adam0white/human-framework");
+  const { checkpointContinuity } = await import("../src/continuity.ts");
+  const { choose } = await import("../src/engine.ts");
+  let game = createGame(42);
+  game.chapter = { claims: [], startedAt: 1, completed: false };
+  for (const id of ["welcome", "check", "private", "ask", "push", "compare", "delegate", "protect"])
+    game = choose(game, id);
+  const changeBody = (
+    receipt: { type: "fallen"; cause: string } | { type: "stood"; actionReceipt: string },
+  ) => {
+    const run = restoreRun(game.actors);
+    if (!run.ok) throw new Error("Unable to restore test run");
+    const at = game.actors.current.at + 60_000;
+    const result = step(run.value, {
+      until: at,
+      inputs: [
+        {
+          id: `test:${receipt.type}`,
+          at,
+          source: { type: "host", id: "days" },
+          kind: "body.received",
+          payload: { person: "hf.cast.leyla.days", evidenceId: `test:${receipt.type}`, receipt },
+        },
+      ],
+    });
+    if (!result.ok) throw new Error(result.error.message);
+    game.actors = exportArchive(run.value);
+  };
+  changeBody({ type: "fallen", cause: "test" });
+  game = choose(game, "name");
+  expect(game.refused).toBe(true);
+  changeBody({ type: "stood", actionReceipt: "test:stand" });
+  game = choose(game, "dismiss");
+  expect(game.named).toBe(true);
+  expect(game.paidCreditor).toBe(true);
+  for (const id of ["confirm", "speak", "close"]) game = choose(game, id);
+  let writes = 0;
+  const shelf = {
+    async request<T>(): Promise<T> {
+      writes++;
+      return undefined as T;
+    },
+  };
+  await expect(checkpointContinuity(shelf, game, () => true)).resolves.toBeUndefined();
+  expect(writes).toBe(1);
+}, 60_000);
+
+it("refuses an older estate-attempt save that lacks the agreement fact", async () => {
+  const { choose, exportRun, hashGame, replay } = await import("../src/engine.ts");
+  let game = createGame(42);
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "ask",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "name",
+  ])
+    game = choose(game, id);
+  expect(game.estateFollowup).toBe(true);
+  const old = exportRun(game);
+  delete old.state.estateFollowup;
+  old.hash = hashGame(old.state);
+  expect(() => replay(old)).toThrow(
+    /earlier Three Days build.*estate follow-up attempt.*Start a new play/,
+  );
+});

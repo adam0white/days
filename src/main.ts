@@ -54,7 +54,7 @@ let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
 let disposed = false;
 let busy = true;
 let generation = 0;
-async function fresh() {
+async function fresh(focus = false) {
   const current = ++generation;
   busy = true;
   const seed = newSeed();
@@ -68,7 +68,7 @@ async function fresh() {
     busy = false;
   }
   save();
-  render(true);
+  render(focus);
 }
 async function checkpoint() {
   if (!game.chapter || game.chapter.completed || game.outcome === "playing") return;
@@ -309,7 +309,7 @@ get("restart").addEventListener("click", () => {
   if (busy) return;
   loadNotice = "";
   menu.close();
-  void fresh().then(() => lab.captureSave(exportRun(game)));
+  void fresh(true).then(() => lab.captureSave(exportRun(game)));
 });
 get("submit-feedback").addEventListener("click", async () => {
   const note = feedbackNote.value.trim();

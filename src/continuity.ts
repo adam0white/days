@@ -109,13 +109,9 @@ export async function checkpointContinuity(
         : initialPersonaLife(castId, branchId, now);
       const action =
         castId === sharedCast[0]
-          ? game.inputs.includes("welcome")
-            ? "Hacer brought soup into the visit."
-            : "Hacer left soup at the door."
+          ? "Hacer visited during Leyla's leave."
           : castId === sharedCast[1]
-            ? game.compared
-              ? "Burak helped check the account."
-              : "The account was part of the visit."
+            ? "Burak brought an account to the visit."
             : game.asked
               ? "Selin was asked to cover the door."
               : "Selin was not asked to cover the door.";
@@ -126,9 +122,7 @@ export async function checkpointContinuity(
               ...(!game.notebookKept ? ["return Leyla's notebook"] : []),
               ...(game.paid ? ["return Leyla's mistaken payment"] : []),
               ...(game.deliveryAssigned ? ["deliver the photograph and letter"] : []),
-              ...(game.named && game.inputs.includes("name")
-                ? ["follow up with the estate contact"]
-                : []),
+              ...(game.estateFollowup ? ["follow up with the estate contact"] : []),
             ]
           : [];
       return createPersona({
