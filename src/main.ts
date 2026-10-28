@@ -139,7 +139,8 @@ function render(focus = false) {
   const continuityNotice = skipped
     .map((id) => ["Hacer", "Burak", "Selin"][sharedCast.indexOf(id)] ?? "A character")
     .map(
-      (name) => `${name}'s shared history is in another chapter; this play uses a local version.`,
+      (name) =>
+        `${name}'s shared history could not join this play; this play uses a local version.`,
     )
     .join(" ");
   const displayNotice = [loadNotice, continuityNotice].filter(Boolean).join(" ");

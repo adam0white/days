@@ -23,7 +23,7 @@ Menu offers playtest export and download to everyone. Replay checks sit in the i
 
 When shared continuity is on, a fresh play admits Hacer, Burak and Selin from the shared shelf and saves their ending states there when they can leave safely. The play records the opening inputs and claim receipts so replay does not consult the shelf. Continuity and play recording are separate choices; turning continuity off keeps the play local.
 
-If someone is still continuing in another game, their shared history stays there while the other available people can continue in Days. The play names anyone who could not join from the shelf.
+If someone cannot carry over, their shared history stays on the shelf while the other available people can continue in Days. The play names anyone who could not join from the shelf.
 
 Older saved plays that attempted a delivery or an estate record lack the new agreement facts and require a fresh play.
 

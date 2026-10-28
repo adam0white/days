@@ -37,12 +37,7 @@ export async function restartFreshGame(
 ): Promise<{ game: Game; retained: boolean }> {
   try {
     await shelf.ready;
-    if (
-      !shelf.enabled &&
-      previous.chapter &&
-      !previous.chapter.completed &&
-      previous.chapter.claims.length
-    )
+    if (previous.chapter && !previous.chapter.completed && previous.chapter.claims.length)
       return { game: previous, retained: true };
     return { game: await startFreshGame(shelf, seed, isCurrent), retained: false };
   } catch {
@@ -92,6 +87,9 @@ export async function startContinuity(
     async (inputs: LifePreparation[]) => createGame(seed, inputs),
     {
       isCurrent,
+      admitPerson: (input: LifePreparation) => {
+        createGame(seed, [input]);
+      },
       claimTransfer: (initial: Game, input: LifePreparation) => ({
         ...projection(initial, input.parent.castId, [], input.parent),
         life: input.life,
