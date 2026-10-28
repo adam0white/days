@@ -106,7 +106,7 @@ it("a refused HF action stays available and names the refusal", () => {
   expect(refused.choices.map((c) => c.id)).toContain("alone");
   expect(refused.text.join(" ")).toMatch(/cannot|refus|rest/);
 });
-it("replays new time, fatigue, payment, and containment facts exactly", { timeout: 30000 }, () => {
+it("replays new time, fatigue, payment, and containment facts exactly", () => {
   const game = careful(42);
   expect(replay(JSON.parse(JSON.stringify(exportRun(game))))).toEqual(game);
 });
@@ -125,7 +125,7 @@ it("Selin's HF decision changes with care and payment, not just the private page
 });
 
 for (const policy of ["read-and-repair", "pay-and-recover"] as const) {
-  it(`allows the full ${policy} route`, { timeout: 30000 }, () => {
+  it(`allows the full ${policy} route`, () => {
     const result = probe(42, policy);
     expect(result.outcome).toBe("won");
     expect(result.hours).toBeGreaterThanOrEqual(0);
