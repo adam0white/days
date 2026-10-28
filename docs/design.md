@@ -70,3 +70,19 @@ The `three-days-2` state schema and input format remain unchanged. Text and comp
 The game moved from HF 3.2.0 to the exact pin 4.0.0 (registry integrity `sha512-8jqvoc25pw1psbiAZnsRH2LfbxhcJ8y3+qhj9L75/qtZOJtqKmnW+eSVfL/pg0QChY3RaSENdkA0DjAiquvu5w==`). The five people live in one HF run. Kemal is a world fact (he has died), never an actor. Everyone hears of his death through HF's death-news input. Each Ink choice gives Leyla one offer and one decision request. The host accepts the start of that offer once, withdraws the scene's offers as soon as the act begins, and reports the finished act with what it gave her (food, rest, company). Selin's choice between the agreed shift and going home is one HF decision between two offers. Food, the first payment and Leyla's tiredness set the effort of the shift she is offered. Reading the page aloud reaches her as a harm she witnessed. Leyla's tiredness readout comes from `inspect` at the run's current time.
 
 The host's two seeded scene facts (starting tiredness and the receipt holder) keep the same draws as the 3.2 build. All 160 policy-probe runs (five policies, seeds 0–31) match iteration 2 in outcome, inputs, hours, tiredness, cover, disclosure, containment and payment; only hashes differ. The `three-days-3` save format replaces `three-days-2`; earlier saves and exports are refused with a start-fresh message, never repaired. HF 4.0 hashes its archive on every step, so a choice takes about 40 ms and a full replay about one second on a desktop; the 32-seed policy test runs one test per seed with the same 30-second cap, and other loops over full runs are one test per case. The game keeps the live HF run for the archive object it last exported, so the next choice from that game skips a restore; any other copy is restored and checked by HF. If HF interrupts an accepted act, the host records no task done and says so; the choice stays, as after a refusal. No policy-probe run produced an interrupt (1,888 acts, all completed).
+
+## HF 4.5.1 delivery (2026-10-28)
+
+Use exact published HF 4.5.1 for both the actors and the lab client's portable bridge,
+with official lab client 0.5.2. The former vendored HF 4.3.0 override is removed.
+The host remains on the public run API described above. No copied actor faculty or
+local body/trust rule is introduced. The `three-days-4` edition refuses older saves
+with a start-fresh message; current exports retain the complete archive and ordered
+choices and must replay exactly. This is a deliberate compatibility decision.
+
+Shared people still enter automatically when the central shelf preference is on.
+Per-person admission refusal names the skipped person and leaves their shelf head
+unchanged. Only eligible people checkpoint, and Burak's actual unfinished host duties
+still prevent departure. Cast controls remain on the central shelf; export stays
+public and replay diagnostics remain in the collapsed Debug item beside Lab privacy.
+This supersedes the older Deferred statement that carryover was not integrated.
