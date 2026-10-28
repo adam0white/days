@@ -33,7 +33,7 @@ import type { GameView, Outcome } from "./types.ts";
 // decisions and ties. The host owns the room, hours, savings, the notebook, the account,
 // the promise and whether an act physically succeeded. Every host fact that a person
 // should know enters as a timestamped input; every reading leaves through `inspect`.
-const VERSION = "three-days-4";
+const VERSION = "three-days-5";
 const OLD_VERSION = "three-days-2";
 const LEYLA = "hf.cast.leyla.days";
 const KEMAL = "hf.cast.kemal.days";
@@ -1008,6 +1008,10 @@ export function replay(input: Run): Game {
   if (input && (input.version === "three-days-3" || input.state?.version === "three-days-3"))
     throw new Error(
       "This play was saved by an earlier Three Days build (Human Framework 4.0) and cannot continue. Keep your export. Start a new play.",
+    );
+  if (input && (input.version === "three-days-4" || input.state?.version === "three-days-4"))
+    throw new Error(
+      "This play was saved by an earlier Three Days build (Human Framework 4.5.1) and cannot continue. Keep your export. Start a new play.",
     );
   if (
     !input ||

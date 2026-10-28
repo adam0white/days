@@ -86,3 +86,20 @@ unchanged. Only eligible people checkpoint, and Burak's actual unfinished host d
 still prevent departure. Cast controls remain on the central shelf; export stays
 public and replay diagnostics remain in the collapsed Debug item beside Lab privacy.
 This supersedes the older Deferred statement that carryover was not integrated.
+
+## HF 4.6.0 retry (2026-10-28)
+
+Pin both actors and the client bridge to published HF 4.6.0. Keep the official
+lab client 0.5.2. HF archives from earlier pins are refused with the existing
+keep-file/start-fresh message. Current-version game and HF replay remain required.
+The three-days-5 envelope refuses the former three-days-4 edition before replay. This is a deliberate compatibility decision.
+
+Portable scope on this retry: the published `hf-portable-person/1` contract
+supports approximate chapters, not full actor continuation. The installed official
+0.5.2 client's finite role map supports Days Hacer, Selin and Burak. Current
+`human-framework/docs/framework.md` explicitly withholds Voice's portable
+Hacer/Selin routes pending supported departure routines. Its G2 row remains the
+external receiving-contract dependency, review 2026-11-17. Days retains named
+skips, atomic head checks, actual-duty refusal and replay-pinned arrivals. This
+port does not claim a newly saved Days Hacer/Selin head reached Voice. No shared
+production histories are changed by the controls.

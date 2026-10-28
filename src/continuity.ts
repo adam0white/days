@@ -13,9 +13,9 @@ import { createGame, type Game, sharedCast } from "./engine.ts";
 
 const source: PersonaEnvelope["source"] = {
   game: "days",
-  build: "three-days-4",
-  engine: "4.5.1",
-  rules: "three-days-4",
+  build: "three-days-5",
+  engine: "4.6.0",
+  rules: "three-days-5",
 };
 
 /** Respect the shared continuity preference when starting a fresh play. */

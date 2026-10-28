@@ -259,3 +259,10 @@ it("refuses the prior HF 4.0 save with an explicit start-fresh message", () => {
   const old = exportRun(createGame(42));
   expect(() => replay({ ...old, version: "three-days-3" })).toThrow(/earlier.*Start a new play/);
 });
+
+it("refuses the previous HF 4.5.1 edition with a keep-file/start-fresh message", () => {
+  const old = exportRun(createGame(42));
+  old.version = "three-days-4";
+  old.state.version = "three-days-4";
+  expect(() => replay(old)).toThrow(/earlier.*4\.5\.1.*Keep your export.*Start a new play/);
+});
