@@ -53,7 +53,12 @@ export interface Game {
   seed: number;
   /** Complete fresh-chapter inputs, pinned for deterministic replay. */
   carry?: LifePreparation[];
-  chapter?: { claims: PersonaEnvelope[]; startedAt: number; completed: boolean };
+  chapter?: {
+    claims: PersonaEnvelope[];
+    startedAt: number;
+    completed: boolean;
+    skipped?: string[];
+  };
   inputs: string[];
   step: number;
   stretches: number;

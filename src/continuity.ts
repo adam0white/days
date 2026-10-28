@@ -6,7 +6,6 @@ import {
   createPersona,
   initialPersonaLife,
   type LifePreparation,
-  PERSONA_ORIGINS,
   type PersonaEnvelope,
   projectPortablePerson,
 } from "@adam0white/lab-client";
@@ -19,21 +18,14 @@ const source: PersonaEnvelope["source"] = {
   rules: "three-days-3",
 };
 
-/** Fresh plays use the shared shelf on supported game origins. */
-export async function enableContinuity(
-  shelf: {
-    readonly ready: Promise<boolean>;
-    readonly enabled: boolean;
-    setEnabled(value: boolean): void;
-  },
-  origin: string,
-): Promise<boolean> {
+/** Respect the shared continuity preference when starting a fresh play. */
+export async function startFreshGame(
+  shelf: CastShelf & { readonly ready: Promise<boolean>; readonly enabled: boolean },
+  seed: number,
+  isCurrent: () => boolean,
+): Promise<Game> {
   await shelf.ready;
-  if (!shelf.enabled && PERSONA_ORIGINS.has(origin)) {
-    shelf.setEnabled(true);
-    await shelf.ready;
-  }
-  return shelf.enabled;
+  return shelf.enabled ? startContinuity(shelf, seed, isCurrent) : createGame(seed);
 }
 
 function projection(
@@ -85,7 +77,13 @@ export async function startContinuity(
     },
   );
   const game = result?.initial ?? createGame(seed);
-  game.chapter = { claims: result?.claims ?? [], startedAt, completed: false };
+  const skipped = result?.blocked.map((item) => item.castId) ?? [];
+  game.chapter = {
+    claims: result?.claims ?? [],
+    startedAt,
+    completed: false,
+    ...(skipped.length ? { skipped } : {}),
+  };
   return game;
 }
 
@@ -97,9 +95,11 @@ export async function checkpointContinuity(
 ): Promise<void> {
   if (!game.chapter || game.chapter.completed || game.outcome === "playing") return;
   const chapter = game.chapter;
+  const eligible = sharedCast.filter((id) => !chapter.skipped?.includes(id));
+  if (!eligible.length) return;
   const now = Date.now();
   const envelopes = await Promise.all(
-    sharedCast.map(async (castId) => {
+    eligible.map(async (castId) => {
       const claim = chapter.claims.find((item) => item.castId === castId);
       const input = game.carry?.find((item) => item.parent.castId === castId);
       if (Boolean(claim) !== Boolean(input)) throw new Error("The chapter receipt is incomplete.");
@@ -148,7 +148,7 @@ export async function checkpointContinuity(
     action: "putBatch",
     envelopes,
     expectedHeads: Object.fromEntries(
-      sharedCast.map((id) => [id, chapter.claims.find((p) => p.castId === id)?.revision ?? null]),
+      eligible.map((id) => [id, chapter.claims.find((p) => p.castId === id)?.revision ?? null]),
     ),
   });
 }

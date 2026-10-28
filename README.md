@@ -21,6 +21,8 @@ After changing `src/story.ink`, run `pnpm story` and commit the Ink source and c
 
 Menu offers playtest export and download to everyone. Replay checks sit in the initially collapsed Debug item beside Lab privacy. Export includes the original seed, ordered input log, final Ink state, the HF 4 run archive and final hash. Replay re-runs both the Ink story and HF, and HF checks its own archive. Saves and exports from the earlier HF 3.2 build are refused with a start-fresh message. Recording can be turned off in Menu. Feedback sends only when submitted.
 
-On the published game origin, a fresh play enables shared continuity, admits Hacer, Burak and Selin from the shared shelf and saves their ending states there when they can leave safely. The play records the opening inputs and claim receipts so replay does not consult the shelf. Continuity and play recording are separate choices.
+When shared continuity is on, a fresh play admits Hacer, Burak and Selin from the shared shelf and saves their ending states there when they can leave safely. The play records the opening inputs and claim receipts so replay does not consult the shelf. Continuity and play recording are separate choices; turning continuity off keeps the play local.
+
+If someone is still continuing in another game, their shared history stays there while the other available people can continue in Days. The play names anyone who could not join from the shelf.
 
 Code is MIT. Religious source records remain in the HF repository; this game supplies no religious rulings.

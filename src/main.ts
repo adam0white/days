@@ -1,6 +1,6 @@
 import { createLab, personaChannel } from "@adam0white/lab-client";
-import { checkpointContinuity, enableContinuity, startContinuity } from "./continuity.ts";
-import { choose, createGame, exportRun, hashGame, replay, view } from "./engine.ts";
+import { checkpointContinuity, startFreshGame } from "./continuity.ts";
+import { choose, createGame, exportRun, hashGame, replay, sharedCast, view } from "./engine.ts";
 import type { mountRoom } from "./room.ts";
 import "./style.css";
 
@@ -59,9 +59,7 @@ async function fresh() {
   busy = true;
   const seed = newSeed();
   try {
-    game = (await enableContinuity(shelf, location.origin))
-      ? await startContinuity(shelf, seed, () => current === generation)
-      : createGame(seed);
+    game = await startFreshGame(shelf, seed, () => current === generation);
   } catch {
     game = createGame(seed);
     loadNotice =
@@ -126,6 +124,14 @@ phoneLayout.addEventListener("change", () => {
 });
 function render(focus = false) {
   const current = view(game);
+  const skipped = game.chapter?.skipped ?? [];
+  const continuityNotice = skipped
+    .map((id) => ["Hacer", "Burak", "Selin"][sharedCast.indexOf(id)] ?? "A character")
+    .map(
+      (name) => `${name}'s shared history is in another chapter; this play uses a local version.`,
+    )
+    .join(" ");
+  const displayNotice = [loadNotice, continuityNotice].filter(Boolean).join(" ");
   scene.dataset.outcome = current.outcome;
   get("progress").textContent = current.progress;
   get("title").textContent = current.title;
@@ -149,17 +155,17 @@ function render(focus = false) {
       "Leyla's father Kemal has died. Hacer has come to pay her respects. Burak, a visitor, is good with accounts. Şükrü was Kemal's colleague.";
     const notice = document.createElement("p");
     notice.id = "save-notice";
-    notice.textContent = loadNotice;
+    notice.textContent = displayNotice;
     get("text").replaceChildren(
-      ...(loadNotice ? [notice] : []),
+      ...(displayNotice ? [notice] : []),
       cast,
       context,
       ...paragraphs.filter((_, index) => index === goalIndex),
     );
   } else {
     const status = document.createElement("p");
-    status.textContent = loadNotice;
-    get("text").replaceChildren(...paragraphs, ...(loadNotice ? [status] : []));
+    status.textContent = displayNotice;
+    get("text").replaceChildren(...paragraphs, ...(displayNotice ? [status] : []));
   }
   get("room-instruction").textContent =
     current.outcome === "playing"

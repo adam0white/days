@@ -17,7 +17,7 @@ it("carries a person through a fresh play and replays without reading the shelf"
   } = await import("@adam0white/lab-client");
   const { startContinuity, checkpointContinuity } = await import("../src/continuity.ts");
   const { choose, exportRun, replay, sharedCast } = await import("../src/engine.ts");
-  const castId = sharedCast[0]!;
+  const castId = sharedCast[1]!;
   const person = JSON.parse(JSON.stringify(createGame(42).actors.current.people[castId]!));
   person.body.satiety = 0.41;
   const branchId = "days-test-branch";
@@ -44,7 +44,10 @@ it("carries a person through a fresh play and replays without reading the shelf"
       if (request.action === "prepareBatch") {
         reads++;
         return {
-          inputs: [preparePersonaLife(parent, Date.now())],
+          inputs: sharedCast.flatMap((id) => {
+            const head = state.revisions.find((p) => p.revision === state.heads[id]);
+            return head ? [preparePersonaLife(head, Date.now())] : [];
+          }),
           blocked: [],
           expectedHeads: Object.fromEntries(sharedCast.map((id) => [id, state.heads[id] ?? null])),
         } as T;
@@ -61,13 +64,40 @@ it("carries a person through a fresh play and replays without reading the shelf"
   const claim = state.revisions.find((p) => p.revision === state.heads[castId])!;
   expect(claim.parentRevision).toBe(parent.revision);
   expect(claim.transfer.portableClaim).toEqual({ game: "days" });
-  const voiceActor = { ...game.actors.current.people[castId]!, id: "hacer" };
+  let unsafeEnding = game;
+  for (const id of [
+    "welcome",
+    "pay",
+    "private",
+    "ask",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "dismiss",
+    "confirm",
+    "speak",
+    "close",
+  ])
+    unsafeEnding = choose(unsafeEnding, id);
+  expect(unsafeEnding.outcome).not.toBe("playing");
+  expect(unsafeEnding.paid).toBe(true);
+  await expect(checkpointContinuity(shelf, unsafeEnding, () => true)).rejects.toThrow(/Burak/);
+  let refusedFresh = false;
+  try {
+    await startContinuity(shelf, 43, () => true);
+  } catch {
+    refusedFresh = true;
+  }
+  expect(refusedFresh).toBe(true);
+  expect(state.heads[castId]).toBe(claim.revision);
+  const otherActor = game.actors.current.people[castId];
   expect(() =>
     projectPortablePerson({
       castId,
-      game: "voice",
+      game: "commonstead",
       engine: "4.0.0",
-      person: voiceActor,
+      person: otherActor,
       history: [],
       previous: claim,
     }),
@@ -99,6 +129,10 @@ it("carries a person through a fresh play and replays without reading the shelf"
   expect(checkpoint.transfer.portableClaim).toBeUndefined();
   expect(validatePortablePerson(checkpoint.transfer.portable).state.body.satiety).toBeCloseTo(
     game.actors.current.people[castId]!.body.satiety,
+  );
+  const next = await startContinuity(shelf, 43, () => true);
+  expect(next.carry?.find((input) => input.parent.castId === castId)?.parent.revision).toBe(
+    checkpoint.revision,
   );
 }, 60_000);
 
@@ -139,22 +173,29 @@ it.each([
   expect(writes).toBe(0);
 });
 
-it("enables the shared shelf for a first play on the game origin", async () => {
+it("keeps explicit continuity opt-out off and starts a local play without shelf writes", async () => {
   const continuity = await import("../src/continuity.ts");
-  expect(continuity).toHaveProperty("enableContinuity");
+  expect(continuity).toHaveProperty("startFreshGame");
+  let writes = 0;
   const shelf = {
     enabled: false,
     get ready() {
       return Promise.resolve(this.enabled);
     },
     setEnabled(value: boolean) {
+      writes++;
       this.enabled = value;
     },
+    async request<T>(): Promise<T> {
+      writes++;
+      throw new Error("Unexpected shelf request");
+    },
   };
-  expect(await continuity.enableContinuity(shelf, "https://days.adamwhite.work")).toBe(true);
-  expect(shelf.enabled).toBe(true);
-  shelf.enabled = false;
-  expect(await continuity.enableContinuity(shelf, "https://example.com")).toBe(false);
+  const game = await continuity.startFreshGame(shelf, 42, () => true);
+  expect(game.outcome).toBe("playing");
+  expect(game.chapter).toBeUndefined();
+  expect(shelf.enabled).toBe(false);
+  expect(writes).toBe(0);
 });
 
 it("does not create a Burak delivery duty when the delivery attempt has no hour", async () => {
@@ -275,4 +316,92 @@ it("does not assign a delivery when leave is refused and Leyla later makes the v
   };
   await expect(checkpointContinuity(shelf, game, () => true)).resolves.toBeUndefined();
   expect(writes).toBe(1);
+}, 60_000);
+
+it("keeps a person locked elsewhere while carrying the rest of the cast", async () => {
+  const {
+    acceptPersonaBatch,
+    canonicalCast,
+    createPersona,
+    initialPersonaLife,
+    preparePersonaLife,
+    projectPortablePerson,
+  } = await import("@adam0white/lab-client");
+  const { startContinuity, checkpointContinuity } = await import("../src/continuity.ts");
+  const { choose, exportRun, replay, sharedCast } = await import("../src/engine.ts");
+  const base = createGame(42);
+  const parentFor = async (castId: string, foreignLock: boolean) => {
+    const branchId = `test-${castId}`;
+    return createPersona({
+      format: "hf-persona/1",
+      castId,
+      castRevision: canonicalCast(castId).revision,
+      branchId,
+      parentRevision: null,
+      source: { game: "days", build: "test", engine: "4.0.0", rules: "test" },
+      transfer: {
+        ...projectPortablePerson({
+          castId,
+          game: "days",
+          engine: "4.0.0",
+          person: base.actors.current.people[castId],
+          history: [],
+        }),
+        life: initialPersonaLife(castId, branchId, Date.now()),
+        ...(foreignLock ? { portableClaim: { game: "voice" } } : {}),
+      },
+      limitations: [],
+    });
+  };
+  const hacer = await parentFor(sharedCast[0]!, true);
+  const burak = await parentFor(sharedCast[1]!, false);
+  let state: import("@adam0white/lab-client").PersonaShelfState = {
+    revisions: [hacer, burak],
+    heads: { [hacer.castId]: hacer.revision, [burak.castId]: burak.revision },
+  };
+  const batches: import("@adam0white/lab-client").PersonaRequest[] = [];
+  const shelf = {
+    async request<T>(request: import("@adam0white/lab-client").PersonaRequest): Promise<T> {
+      if (request.action === "prepareBatch")
+        return {
+          inputs: state.revisions
+            .filter((p) => state.heads[p.castId] === p.revision)
+            .map((p) => preparePersonaLife(p, Date.now())),
+          blocked: [],
+          expectedHeads: Object.fromEntries(sharedCast.map((id) => [id, state.heads[id] ?? null])),
+        } as T;
+      if (request.action === "putBatch") {
+        batches.push(request);
+        state = acceptPersonaBatch(state, request.envelopes ?? [], request.expectedHeads);
+        return undefined as T;
+      }
+      throw new Error("Unexpected shelf request");
+    },
+  };
+  let game = await startContinuity(shelf, 42, () => true);
+  expect(game.chapter?.skipped).toContain(hacer.castId);
+  expect(state.heads[hacer.castId]).toBe(hacer.revision);
+  expect(state.heads[burak.castId]).not.toBe(burak.revision);
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "ask",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "dismiss",
+    "confirm",
+    "speak",
+    "close",
+  ])
+    game = choose(game, id);
+  await checkpointContinuity(shelf, game, () => true);
+  expect(replay(JSON.parse(JSON.stringify(exportRun(game))))).toEqual(game);
+  expect(batches.at(-1)?.expectedHeads).not.toHaveProperty(hacer.castId);
+  expect(batches.at(-1)?.envelopes?.map((p) => p.castId)).not.toContain(hacer.castId);
+  expect(state.heads[hacer.castId]).toBe(hacer.revision);
+  expect(state.heads[burak.castId]).not.toBe(burak.revision);
+  expect(state.heads[sharedCast[2]!]).toBeDefined();
 }, 60_000);
