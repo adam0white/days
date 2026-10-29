@@ -1,3 +1,4 @@
+import framework from "@adam0white/human-framework/package.json" with { type: "json" };
 import {
   anchorPersonaLife,
   type CastShelf,
@@ -7,6 +8,7 @@ import {
   initialPersonaLife,
   type LifePreparation,
   type PersonaEnvelope,
+  portableWriteBlockers,
   projectPortablePerson,
 } from "@adam0white/lab-client";
 import { createGame, type Game, sharedCast } from "./engine.ts";
@@ -14,7 +16,7 @@ import { createGame, type Game, sharedCast } from "./engine.ts";
 const source: PersonaEnvelope["source"] = {
   game: "days",
   build: "three-days-5",
-  engine: "4.6.0",
+  engine: framework.version,
   rules: "three-days-5",
 };
 
@@ -60,6 +62,10 @@ function projection(
       game: "days",
       engine: source.engine,
       person,
+      calendar: {
+        definition: game.actors.initial.spec.definitions.calendar,
+        norms: game.actors.initial.spec.definitions.norms,
+      },
       history,
       previous,
       hostObligations,
@@ -115,7 +121,14 @@ export async function checkpointContinuity(
 ): Promise<void> {
   if (!game.chapter || game.chapter.completed || game.outcome === "playing") return;
   const chapter = game.chapter;
-  const eligible = sharedCast.filter((id) => !chapter.skipped?.includes(id));
+  const blocked = sharedCast.filter((id) => portableWriteBlockers(id, "days").length > 0);
+  if (chapter.claims.some((claim) => blocked.includes(claim.castId)))
+    throw new Error(
+      "A saved history is still held by this play. Keep this play until its other games are ready.",
+    );
+  const eligible = sharedCast.filter(
+    (id) => !chapter.skipped?.includes(id) && !blocked.includes(id),
+  );
   if (!eligible.length) return;
   const now = Date.now();
   const envelopes = await Promise.all(

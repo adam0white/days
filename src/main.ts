@@ -1,4 +1,5 @@
 import { createLab, personaChannel } from "@adam0white/lab-client";
+import { PEOPLE_ACROSS_GAMES } from "@adam0white/lab-kit";
 import { checkpointContinuity, restartFreshGame, startFreshGame } from "./continuity.ts";
 import { choose, createGame, exportRun, hashGame, replay, sharedCast, view } from "./engine.ts";
 import type { mountRoom } from "./room.ts";
@@ -26,6 +27,10 @@ function store(key: string, value: string) {
 const lab = createLab({ game: "days" });
 const shelf = personaChannel();
 const menu = get<HTMLDialogElement>("menu-dialog");
+const peopleLink = document.createElement("a");
+peopleLink.href = "https://human.adamwhite.work/lab/people/";
+peopleLink.textContent = PEOPLE_ACROSS_GAMES;
+get("menu-home").append(peopleLink);
 const notice = get<HTMLDialogElement>("notice");
 const recording = get<HTMLInputElement>("recording");
 const feedbackNote = get<HTMLTextAreaElement>("feedback-note");
@@ -36,6 +41,7 @@ const newSeed = () => crypto.getRandomValues(new Uint32Array(1))[0] ?? 1;
 let game = createGame(newSeed());
 let loadNotice = "";
 let restored = false;
+let preserveOldSave = false;
 const saved = read(storageKey);
 if (saved) {
   try {
@@ -47,7 +53,9 @@ if (saved) {
       error instanceof Error && error.message.startsWith("This play was saved by an earlier")
         ? error.message
         : "Your saved play could not be checked, so a new play has started.";
-    store(storageKey, "");
+    preserveOldSave = true;
+    loadNotice +=
+      " The earlier saved play remains on this device. This new play is not saved until you confirm New game.";
   }
 }
 let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
@@ -72,11 +80,16 @@ async function fresh(focus = false) {
     }
   } catch {
     game = createGame(seed);
-    loadNotice =
-      "Continuity could not be confirmed. This play starts locally; check the shelf before trying again.";
+    loadNotice = [
+      loadNotice,
+      "Continuity could not be confirmed. This play starts locally; check the shelf before trying again.",
+    ]
+      .filter(Boolean)
+      .join(" ");
   } finally {
     busy = false;
   }
+  if (!retained && focus) preserveOldSave = false;
   if (!retained) save();
   render(focus && !retained);
   return !retained;
@@ -101,6 +114,7 @@ async function checkpoint() {
   }
 }
 function save() {
+  if (preserveOldSave) return;
   store(storageKey, JSON.stringify(exportRun(game)));
 }
 const objects: Record<string, { name: string; shape: string }> = {

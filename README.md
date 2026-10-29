@@ -2,7 +2,7 @@
 
 A daughter returns to Istanbul after her father's death. She has three days of leave, an incomplete notebook and neighbours who remember different men.
 
-A short Ink game in an illustrated PixiJS room. Human Framework 4.5.1 supplies the people and the shared portable continuity bridge. Lab client 0.5.2 carries the shelf protocol. The choices concern the living: an uncertain account, a promise, privacy and help. Worship is never a score. Bereavement and estrangement feature throughout; violence is not shown.
+A short Ink game in an illustrated PixiJS room. Human Framework 4.8.1 supplies the people and portable continuity bridge. Lab client 0.5.7 carries the shelf protocol; kit 0.5.24 provides the shared menu label. The choices concern the living: an uncertain account, a promise, privacy and help. Worship is never a score. Bereavement and estrangement feature throughout; violence is not shown.
 
 [Play](https://days.adamwhite.work) · [Design](docs/design.md)
 
@@ -21,7 +21,7 @@ After changing `src/story.ink`, run `pnpm story` and commit the Ink source and c
 
 Menu offers playtest export and download to everyone. Replay checks sit in the initially collapsed Debug item beside Lab privacy. Export includes the original seed, ordered input log, final Ink state, the HF 4 run archive and final hash. Replay re-runs both the Ink story and HF, and HF checks its own archive. Saves and exports from the earlier HF 3.2 build are refused with a start-fresh message. Recording can be turned off in Menu. Feedback sends only when submitted.
 
-When shared continuity is on, a fresh play admits Hacer, Burak and Selin from the shared shelf and saves their ending states there when they can leave safely. The play records the opening inputs and claim receipts so replay does not consult the shelf. Continuity and play recording are separate choices; turning continuity off keeps the play local.
+When shared continuity is on, a fresh play checks Hacer, Burak and Selin on the shared shelf. Each portable write stays closed until every peer has a verified live client 0.5.5 or later and per-person skips. Client 0.5.7 has no Voice source role, so Voice portable histories are skipped without replacement. The play records the opening inputs and claim receipts so replay does not consult the shelf. Continuity and play recording are separate choices; turning continuity off keeps the play local.
 
 If someone cannot carry over, their shared history stays on the shelf while the other available people can continue in Days. The play names anyone who could not join from the shelf.
 
