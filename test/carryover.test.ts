@@ -1,4 +1,34 @@
-import { expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vitest";
+import { PORTABLE_READERS } from "../node_modules/@adam0white/lab-client/dist/portable-readers.js";
+
+// These synthetic controls exercise ownership once all peers support per-person skips.
+const readers = PORTABLE_READERS as Record<string, { client: string; perPersonSkips: boolean }>;
+beforeEach(() => {
+  for (const game of [
+    "voice",
+    "days",
+    "commonstead",
+    "stairwell",
+    "goodhands",
+    "murmur",
+    "hearsay",
+    "neighbours",
+    "repair",
+    "pass",
+    "glance",
+    "rope",
+    "warren",
+    "well",
+    "watch",
+    "valley",
+    "lefthand",
+  ])
+    readers[game] = { client: "0.5.7", perPersonSkips: true };
+});
+afterEach(() => {
+  for (const game of Object.keys(readers)) delete readers[game];
+});
+
 import { createGame } from "../src/engine.ts";
 
 it("rejects an invalid pinned parent instead of silently starting a fresh person", () => {
@@ -605,3 +635,69 @@ it.each(["native", "dead"])(
   },
   60_000,
 );
+
+it("admits an SDK-validated retained-v2 Days role with an explicit clock mapping", async () => {
+  const { inspect, restoreRun } = await import("@adam0white/human-framework");
+  const { canonicalCast, createPersona, initialPersonaLife, preparePersonaLife } = await import(
+    "@adam0white/lab-client"
+  );
+  const { sharedCast } = await import("../src/engine.ts");
+  const id = sharedCast[1]!;
+  const sourceGame = createGame(42);
+  const restored = restoreRun(sourceGame.actors);
+  if (!restored.ok) throw new Error(restored.error.message);
+  const projection = inspect(restored.value, {
+    perspective: { kind: "host" },
+    people: [id],
+    select: ["persona"],
+    portable: { person: id, castId: id, castRevision: canonicalCast(id).revision },
+  });
+  if (!projection.ok) throw new Error(projection.error.message);
+  const entry = projection.value.people[0];
+  if (entry?.kind !== "host") throw new Error("Missing projection");
+  const part = entry.parts.find((value) => value.select === "persona");
+  if (part?.select !== "persona") throw new Error("Missing portable person");
+  const portable = part.value;
+  const parent = await createPersona({
+    format: "hf-persona/1",
+    castId: id,
+    castRevision: canonicalCast(id).revision,
+    branchId: "retained-control",
+    parentRevision: null,
+    source: { game: "days", build: "control", engine: "4.8.1", rules: "control" },
+    transfer: {
+      castPassport: "hf-portable-person/2",
+      portable,
+      life: initialPersonaLife(id, "retained-control", Date.now()),
+    },
+    limitations: [],
+  });
+  const incoming = createGame(43, [preparePersonaLife(parent, Date.now())]);
+  expect(incoming.actors.current.people[id]).toBeDefined();
+  const { startContinuity } = await import("../src/continuity.ts");
+  let claims: import("@adam0white/lab-client").PersonaEnvelope[] = [];
+  const shelf = {
+    async request<T>(request: import("@adam0white/lab-client").PersonaRequest): Promise<T> {
+      if (request.action === "prepareBatch")
+        return {
+          inputs: [preparePersonaLife(parent, Date.now())],
+          blocked: [],
+          expectedHeads: Object.fromEntries(
+            sharedCast.map((key) => [key, key === id ? parent.revision : null]),
+          ),
+        } as T;
+      if (request.action === "putBatch") {
+        claims = request.envelopes ?? [];
+        return undefined as T;
+      }
+      throw new Error("Unexpected request");
+    },
+  };
+  const game = await startContinuity(shelf, 43, () => true);
+  expect(claims.find((claim) => claim.castId === id)?.transfer.castPassport).toBe(
+    "hf-portable-person/2",
+  );
+  const { exportRun, replay } = await import("../src/engine.ts");
+  for (const key of Object.keys(readers)) delete readers[key];
+  expect(replay(exportRun(game))).toEqual(game);
+});

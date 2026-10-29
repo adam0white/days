@@ -17,13 +17,14 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "check:lane": "pnpm check",
+    "check:lane": "pnpm lint && pnpm typecheck",
     "story": "node scripts/compile-story.ts",
     "deploy": "node scripts/deploy.ts"
   },
   "dependencies": {
-    "@adam0white/human-framework": "4.6.0",
-    "@adam0white/lab-client": "file:vendor/adam0white-lab-client-0.5.2.tgz",
+    "@adam0white/human-framework": "4.8.1",
+    "@adam0white/lab-client": "file:vendor/adam0white-lab-client-0.5.7.tgz",
+    "@adam0white/lab-kit": "file:vendor/adam0white-lab-kit-0.5.24.tgz",
     "inkjs": "2.4.0",
     "pixi.js": "8.22.0"
   },

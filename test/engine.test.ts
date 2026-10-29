@@ -266,3 +266,9 @@ it("refuses the previous HF 4.5.1 edition with a keep-file/start-fresh message",
   old.state.version = "three-days-4";
   expect(() => replay(old)).toThrow(/earlier.*4\.5\.1.*Keep your export.*Start a new play/);
 });
+
+it("refuses a prior HF package with a keep-file and start-fresh message", () => {
+  const old = JSON.parse(JSON.stringify(exportRun(createGame(42))));
+  old.state.actors.engine.package = "@adam0white/human-framework@4.6.0";
+  expect(() => replay(old)).toThrow(/earlier.*Keep your export.*Start a new play/);
+});

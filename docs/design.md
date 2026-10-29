@@ -1,3 +1,7 @@
+## HF 4.8.1 candidate (2026-10-28)
+
+The game pins HF 4.8.1, immutable client 0.5.7 and kit 0.5.24. Per-person portable writes stay closed until every peer has a verified live client 0.5.5 or later and per-person skips. The client does not bind Voice as a source role, so Voice portable heads are skipped and retained on the shelf. No Days–Left Hand role exists. Current exports replay exactly; earlier package saves receive a keep-file and start-fresh message. Owner acceptance remains separate. Earlier entries below are historical.
+
 # Three Days
 
 A daughter keeps the condolence door open. Kemal died before Leyla could tell him her marriage had ended. She has three days of leave, his notebook, a disputed account and neighbours who remember different men.

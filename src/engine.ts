@@ -19,11 +19,13 @@ import {
   restoreRun,
   type StepResult,
 } from "@adam0white/human-framework";
+import framework from "@adam0white/human-framework/package.json" with { type: "json" };
 import {
   admitPortablePerson,
   type LifePreparation,
   type PersonaEnvelope,
   portablePassport,
+  validatePortablePerson,
 } from "@adam0white/lab-client";
 import { Story } from "inkjs";
 import compiled from "./story.json" with { type: "json" };
@@ -354,7 +356,22 @@ function opening(seed: number, carry: LifePreparation[]): Actors {
   for (let i = 0; i < ids.length; i++) {
     const parent = carry.find((input) => input.parent.castId === ids[i])?.parent;
     need(
-      createPerson(run, parent ? admitPortablePerson(parent, "days", authored(i)) : authored(i)),
+      createPerson(
+        run,
+        parent
+          ? admitPortablePerson(
+              parent,
+              "days",
+              authored(i),
+              (() => {
+                const portable = validatePortablePerson(parent.transfer.portable);
+                return portable.version === 2
+                  ? { offsetMs: START - portable.retained.at, references: [] }
+                  : undefined;
+              })(),
+            )
+          : authored(i),
+      ),
     );
   }
   // Everyone in the room hears of the death through one input; HF words it from the lexicon.
@@ -1022,6 +1039,10 @@ export function replay(input: Run): Game {
     typeof input.hash !== "string"
   )
     throw new Error("This export is not a supported Three Days run.");
+  if (input.state.actors?.engine.package !== `@adam0white/human-framework@${framework.version}`)
+    throw new Error(
+      "This play was saved by an earlier Three Days build. Keep your export. Start a new play.",
+    );
   let game = createGame(input.seed, input.state.carry ?? []);
   if (input.state.chapter) game.chapter = clone(input.state.chapter);
   for (const id of input.inputs) game = choose(game, id);
