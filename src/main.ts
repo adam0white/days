@@ -239,6 +239,12 @@ function render(focus = false) {
         cost.textContent = choice.cost;
         button.append(cost);
       }
+      if (choice.note) {
+        const note = document.createElement("span");
+        note.className = "action-note";
+        note.textContent = choice.note;
+        button.append(note);
+      }
       button.addEventListener("click", () => {
         if (busy) return;
         busy = true;
