@@ -228,7 +228,10 @@ it("says before the press that a visit cannot be afforded and what else this sce
   const before = hashGame(game);
   const visit = view(game).choices.find((c) => c.id === "confirm");
   expect(visit?.note).toContain("needs 2 hours; 1 remains");
-  expect(visit?.note).toContain("moves on");
+  // The advance is conditional on Leyla completing the attempt; a refused or interrupted act keeps the scene.
+  expect(visit?.note).toContain("If Leyla completes the attempt");
+  expect(visit?.note).toContain("the story moves on");
+  expect(visit?.note).toContain("if she cannot take it on now, the choice stays");
   expect(visit?.note).toContain("paid delivery");
   // Display only: the stored choice, cost text and state hash are unchanged, and it stays pressable.
   expect(game.choices.find((c) => c.id === "confirm")).not.toHaveProperty("note");

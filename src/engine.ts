@@ -795,7 +795,7 @@ function choiceCost(game: Game, id: string): string {
 }
 /**
  * A display-only warning for the final answer, where the visit and the paid delivery share one
- * scene and any press ends it. It is derived from the state on every view, never stored, so the
+ * scene and a completed press ends it; a refused or interrupted act keeps the scene. It is derived from the state on every view, never stored, so the
  * saved cost text, the input log and the replay hash are unchanged. The press stays available.
  */
 function choiceNote(game: Game, id: string): string | undefined {
@@ -803,10 +803,10 @@ function choiceNote(game: Game, id: string): string | undefined {
   if (id === "confirm") {
     const hours = journeyHours(game);
     if (game.stretches >= hours) return undefined;
-    return `This visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${left}. Pressing it will not make the visit, and the story moves on.${game.stretches >= 1 ? " The paid delivery is the other way to answer Şükrü here." : " The paid delivery needs 1 hour, so it does not fit either."}`;
+    return `This visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${left}. If Leyla completes the attempt, it will not make the visit and the story moves on; if she cannot take it on now, the choice stays.${game.stretches >= 1 ? " The paid delivery is the other way to answer Şükrü here." : " The paid delivery needs 1 hour, so it does not fit either."}`;
   }
   if (id === "leave" && game.stretches < 1)
-    return "The paid delivery needs 1 hour; none remains. Pressing it will not arrange the delivery, and the story moves on.";
+    return "The paid delivery needs 1 hour; none remains. If Leyla completes the attempt, it will not arrange the delivery and the story moves on; if she cannot take it on now, the choice stays.";
   return undefined;
 }
 function spend(game: Game, hours: number): boolean {
