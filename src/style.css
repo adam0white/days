@@ -553,6 +553,13 @@ dialog input[type="checkbox"] {
   color: #f6d58e;
   max-width: 310px;
 }
+.action-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #ffd9c2;
+  max-width: 310px;
+  font-weight: 600;
+}
 @media (max-width: 700px) {
   #room-status {
     padding: 8px 18px;
@@ -562,7 +569,8 @@ dialog input[type="checkbox"] {
   #room-status span + span::before {
     margin-right: 6px;
   }
-  .action-cost {
+  .action-cost,
+  .action-note {
     font-size: 10px;
   }
 }

@@ -107,3 +107,11 @@ external receiving-contract dependency, review 2026-11-17. Days retains named
 skips, atomic head checks, actual-duty refusal and replay-pinned arrivals. This
 port does not claim a newly saved Days Hacer/Selin head reached Voice. No shared
 production histories are changed by the controls.
+
+## Light-1031 affordability display (2026-10-31)
+
+The first Days LIGHT panel found that "Make the journey yourself" can be pressed with fewer hours than the visit needs (F-2409, F-2418). A completed press is an accepted attempt: the scene ends, the visit does not happen, and the paid delivery that shared the scene is gone. This stays. Tessa liked being allowed to fail with a clear reason, so no choice is hidden, disabled, refunded or undone, and costs and story are unchanged. The choice now carries a display-only note when it cannot be afforded: it states the hours needed and left, that if Leyla completes the attempt it will not make the visit and the story moves on (if she cannot take it on now, the choice stays), and whether the paid delivery fits. The compare button no longer says "obtain" once the original is already in hand (F-2420, receipt wording). The note and the shown cost are computed in `view()` from state; the saved cost text, input log and replay hash are unchanged, so current exports replay as before.
+
+- Not changed, reproduced: Selin holds the receipt in the claim scene on 13 of seeds 0–31, before the notebook scene introduces her (F-2419). The line is authored Ink text inside the hashed state; a fix needs a story and edition change and is reported for a decision, due 2026-11-03.
+- Not changed: the "Save 1 hour" wording (F-2420 second half) is accurate (an hour not spent) but reads as a change to the hours shown; numeric savings, branches, free expression, a longer game and replay variety stay Deferred to 2026-11-10 (F-2406, F-2407, F-2410–F-2413, F-2415–F-2417).
+- Phone reach (F-2408, F-2414) is qualified, not proven: no layout change without a native pointer repro.

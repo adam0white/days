@@ -793,6 +793,22 @@ function choiceCost(game: Game, id: string): string {
   };
   return required(costs[id]);
 }
+/**
+ * A display-only warning for the final answer, where the visit and the paid delivery share one
+ * scene and a completed press ends it; a refused or interrupted act keeps the scene. It is derived from the state on every view, never stored, so the
+ * saved cost text, the input log and the replay hash are unchanged. The press stays available.
+ */
+function choiceNote(game: Game, id: string): string | undefined {
+  const left = `${game.stretches} ${game.stretches === 1 ? "remains" : "remain"}`;
+  if (id === "confirm") {
+    const hours = journeyHours(game);
+    if (game.stretches >= hours) return undefined;
+    return `This visit needs ${hours} ${hours === 1 ? "hour" : "hours"}; ${left}. If Leyla completes the attempt, it will not make the visit and the story moves on; if she cannot take it on now, the choice stays.${game.stretches >= 1 ? " The paid delivery is the other way to answer Şükrü here." : " The paid delivery needs 1 hour, so it does not fit either."}`;
+  }
+  if (id === "leave" && game.stretches < 1)
+    return "The paid delivery needs 1 hour; none remains. If Leyla completes the attempt, it will not arrange the delivery and the story moves on; if she cannot take it on now, the choice stays.";
+  return undefined;
+}
 function spend(game: Game, hours: number): boolean {
   if (game.stretches < hours) return false;
   game.stretches -= hours;
@@ -977,7 +993,19 @@ export function view(game: Game): GameView {
     day: Math.min(3, Math.floor(game.step / 4) + 1),
     title: game.title,
     text: [...game.text],
-    choices: clone(game.choices),
+    choices: game.choices.map((choice) => {
+      const note = game.outcome === "playing" ? choiceNote(game, choice.id) : undefined;
+      // Display only: the stored cost keeps its hashed wording; once the original is in hand the
+      // shown cost no longer says to obtain it.
+      const cost =
+        choice.id === "compare" && game.checked && choice.cost
+          ? choice.cost.replace(
+              "to obtain and check the original",
+              "to check the original you already have",
+            )
+          : choice.cost;
+      return { ...choice, ...(cost ? { cost } : {}), ...(note ? { note } : {}) };
+    }),
     outcome: game.outcome,
     people: [...names],
     mood:

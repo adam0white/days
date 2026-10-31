@@ -9,7 +9,7 @@ export interface GameView {
   day: number;
   title: string;
   text: string[];
-  choices: { id: string; label: string; cost?: string }[];
+  choices: { id: string; label: string; cost?: string; note?: string }[];
   outcome: Outcome;
   people: string[];
   mood: string;

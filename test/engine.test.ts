@@ -209,6 +209,49 @@ it("shows hour costs before a choice and never spends below zero", () => {
   expect(hashGame(replay(exportRun(game)))).toBe(hashGame(game));
 });
 
+it("says before the press that a visit cannot be afforded and what else this scene offers", () => {
+  // Light-1031 F-2409/F-2418: 2 hours needed, 1 remains; the press ends this scene's choice.
+  let game = createGame(42);
+  for (const id of [
+    "welcome",
+    "check",
+    "private",
+    "hide",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "name",
+  ])
+    game = choose(game, id);
+  expect(game.stretches).toBe(1);
+  const before = hashGame(game);
+  const visit = view(game).choices.find((c) => c.id === "confirm");
+  expect(visit?.note).toContain("needs 2 hours; 1 remains");
+  // The advance is conditional on Leyla completing the attempt; a refused or interrupted act keeps the scene.
+  expect(visit?.note).toContain("If Leyla completes the attempt");
+  expect(visit?.note).toContain("the story moves on");
+  expect(visit?.note).toContain("if she cannot take it on now, the choice stays");
+  expect(visit?.note).toContain("paid delivery");
+  // Display only: the stored choice, cost text and state hash are unchanged, and it stays pressable.
+  expect(game.choices.find((c) => c.id === "confirm")).not.toHaveProperty("note");
+  expect(hashGame(game)).toBe(before);
+  const failed = choose(game, "confirm");
+  expect(failed.confirmed).toBe(false);
+  expect(view(failed).text.join(" ")).toContain("The visit needs 2 hours; 1 remains.");
+  expect(hashGame(replay(exportRun(failed)))).toBe(hashGame(failed));
+});
+
+it("does not offer to obtain a receipt Leyla already holds, without changing stored cost text", () => {
+  // Light-1031 F-2420: the scene says the original was brought; the button said "obtain".
+  let game = createGame(42);
+  for (const id of ["welcome", "check", "private", "hide", "rest"]) game = choose(game, id);
+  expect(game.checked).toBe(true);
+  const shown = view(game).choices.find((c) => c.id === "compare")?.cost;
+  expect(shown).toBe("1 hour to check the original you already have; no time to recuperate.");
+  expect(game.choices.find((c) => c.id === "compare")?.cost).toContain("obtain and check");
+});
+
 it("refuses a 3.x export before building a run, with a start-fresh message", () => {
   const old = exportRun(play(42, win.slice(0, 3)));
   const state = { ...JSON.parse(JSON.stringify(old.state)), version: "three-days-2" };
