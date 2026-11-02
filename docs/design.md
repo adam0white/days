@@ -163,3 +163,114 @@ All asks below remain engineering-open. F-3140 and F-3142 have this source corre
 - D10: actual32680EXIT0 and prior435 sampled identity closure/fiveprofiles/elevenports/17stableinputs before reports remain bounded receipts, not unseen process proof.
 - D11: root raw249responses/56literalreactionstrings/102extractionspans checked; rejected Leire log is not successful diary. Finalizer eligibility is audit, not enforcement.
 - D12: first fixed retest has one new reached blocking question; secondfix/retest required, no finish/cap/thirdpanel/owneracceptance claim.
+
+
+## Final lab retest — 2026-11-02
+
+Second fixed-build retest on b312bcdb7fc264d98eb9118d5737dde8d57d9691 / HF4.8.1. Four returning standing fictional testers and new fictional cold Lucia Ferraro. Nine actual endings, one voluntary unfinished Rosa desktop TASTE stop, zero coordinator cuts. Allfive report no newblockingask; ordinary loop ends under the two-iteration rule. No human or owner acceptance is established. No third ordinary panel.
+
+Rosa phone reached the revised comparison-cost text, used one hour and saw two left. She says it answered her earlier rest question. Fresh runs had no matched seed; this is a bounded subjective result, not causal proof.
+
+Qualified source packet: human-framework/docs/lab/reviews/light-2026-10-30/days-retest2 (publication pending). Manifest 60d98859221476cf1f337474195acc1bf677ec19a37a5e40b58bf512e0d71b89. External rootseal 0ce9de3ba2e8f81773de670a1d46886649f628adfa4a3fae6e50dd40e670311f. Raw words and all protocol Q1–9/root RQ1–12 qualifications remain with the packet. Images are not independently proven perceived; aggregate history stdout does not prove comprehension, and Tessa retains explicit reading uncertainty. Four quote failures,11one-ms clock differences,3poststop automaticshots,Feedbackdraft-versus-submit and staticSDK/backend limits remain.
+
+### Full return statements
+
+**Emre Kaya**
+
+I would return voluntarily another evening on desktop to try another path, but I would not leave it running or play again tonight.
+
+I reached no new blocking ask.
+
+**Pavel Novak**
+
+I would return voluntarily another evening on the desktop to try a different route, but not tonight; I would not leave it running.
+
+I reached no new blocking gameplay ask.
+
+**Tessa Williams**
+
+I would not return voluntarily tonight or leave Days running; I liked how it remembered the unfinished obligations and the harm of the disclosure, but I have had enough of these familiar choices.
+
+I reached no new blocking control or blocking ask.
+
+**Rosa Alvarez**
+
+I would return voluntarily another evening on the large screen to try a different choice; I would close it now, not leave it running.
+
+No new blocking ask arose.
+
+**Lucia Ferraro**
+
+I would not voluntarily return for another run now; I would leave the game after the ending rather than leave it running.
+
+No blocking ask arose. I could choose delivery and continue.
+
+### Deferred — review 2026-11-03
+
+These are reached nonblocking preferences or a retain request. The ordinary panel cap has been reached. Preserve each request separately; do not infer permission to change difficulty, faith, state costs or add free text from this record.
+
+#### F-3144 — emre
+
+1. Show the amount paid and the savings remaining. On the phone, I understood that Burak owed the mistaken payment back, but I could not tell how much Leyla had paid.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3145 — pavel
+
+1. Clarify the receipt wording. On both devices someone already had a receipt, yet getting the original took an hour. I could not tell whether those were different papers.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3146 — pavel
+
+2. Make the small, pale cost text on the phone room drawing easier to read.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3147 — pavel
+
+3. Give me a little more time with the days. I liked the choices and their consequences, but both stories passed quickly.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3148 — tessa
+
+1. Give me more ways to speak or act with Selin, Hacer and Burak, including something in my own words.
+
+Route: new capability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3149 — tessa
+
+2. Give me more reason to revisit the three days beyond choosing another option on familiar screens.
+
+Route: new capability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3150 — rosa
+
+1. Show the amount before I pay from Leyla’s savings.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3151 — rosa
+
+2. Replace “named visit” with plain words about agreeing when to visit.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3152 — rosa
+
+3. Keep the new hour explanation: “work through the hour without resting” and “2 hours left afterward.”
+
+Route: no-change / retain current wording. Review date: 2026-11-03. Reason: Retain current delivered wording; positive reached request, no code change.
+
+#### F-3153 — lucia
+
+1. Explain the insufficient-time visit choice more plainly. I understood that one hour remained and the visit needed two, but not what completing the attempt would do.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
+
+#### F-3154 — lucia
+
+2. Give me a little more help keeping the people straight early on. Several names arrived close together.
+
+Route: clarity or readability. Review date: 2026-11-03. Reason: Tester reports no new blocking ask; ordinary iteration cap reached. Review the preference in the existing game direction before choosing a change.
