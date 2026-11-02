@@ -995,15 +995,33 @@ export function view(game: Game): GameView {
     text: [...game.text],
     choices: game.choices.map((choice) => {
       const note = game.outcome === "playing" ? choiceNote(game, choice.id) : undefined;
-      // Display only: the stored cost keeps its hashed wording; once the original is in hand the
-      // shown cost no longer says to obtain it.
-      const cost =
+      // Display only: keep stored costs and replay hashes unchanged. Distinguish time spent
+      // working from the hours available afterward, and make rest optional when already rested.
+      let cost =
         choice.id === "compare" && game.checked && choice.cost
           ? choice.cost.replace(
               "to obtain and check the original",
               "to check the original you already have",
             )
           : choice.cost;
+      if (choice.id === "compare" && cost) {
+        const hours = comparisonHours(game);
+        const remaining = game.stretches - hours;
+        const work =
+          hours === 1
+            ? "work through the hour without resting."
+            : hours > 1
+              ? "work through these hours without resting."
+              : "check the papers without resting.";
+        const afterward =
+          remaining >= 0
+            ? `${remaining} ${remaining === 1 ? "hour" : "hours"} left afterward.`
+            : `Only ${game.stretches} ${game.stretches === 1 ? "hour is" : "hours are"} available; the check cannot be completed.`;
+        cost = cost.replace("no time to recuperate.", `${work} ${afterward}`);
+      }
+      if (choice.id === "rest" && tiredness(game) < 2 && cost) {
+        cost = cost.replace("to recover enough to read", "for food and quiet");
+      }
       return { ...choice, ...(cost ? { cost } : {}), ...(note ? { note } : {}) };
     }),
     outcome: game.outcome,

@@ -242,14 +242,35 @@ it("says before the press that a visit cannot be afforded and what else this sce
   expect(hashGame(replay(exportRun(failed)))).toBe(hashGame(failed));
 });
 
-it("does not offer to obtain a receipt Leyla already holds, without changing stored cost text", () => {
-  // Light-1031 F-2420: the scene says the original was brought; the button said "obtain".
+it("explains rest and checking an already held receipt without changing stored costs or state", () => {
+  // F-2420, F-3140 and F-3142: explain the choices without changing their stored costs.
   let game = createGame(42);
-  for (const id of ["welcome", "check", "private", "hide", "rest"]) game = choose(game, id);
+  for (const id of ["welcome", "check", "private", "hide"]) game = choose(game, id);
+  const beforeRestView = hashGame(game);
+  const restView = view(game);
+  expect(restView.fatigue).toBeLessThan(2); // The UI calls this Rested.
+  expect
+    .soft(restView.choices.find((c) => c.id === "rest")?.cost)
+    .toBe("1 hour for food and quiet; fewer visitors can be received.");
+  expect(game.choices.find((c) => c.id === "rest")?.cost).toBe(
+    "1 hour to recover enough to read; fewer visitors can be received.",
+  );
+  expect(hashGame(game)).toBe(beforeRestView);
+
+  game = choose(game, "rest");
   expect(game.checked).toBe(true);
-  const shown = view(game).choices.find((c) => c.id === "compare")?.cost;
-  expect(shown).toBe("1 hour to check the original you already have; no time to recuperate.");
-  expect(game.choices.find((c) => c.id === "compare")?.cost).toContain("obtain and check");
+  const beforeCompareView = hashGame(game);
+  const compareView = view(game);
+  expect(compareView.hours).toBeGreaterThanOrEqual(1);
+  expect
+    .soft(compareView.choices.find((c) => c.id === "compare")?.cost)
+    .toBe(
+      `1 hour to check the original you already have; work through the hour without resting. ${compareView.hours - 1} ${compareView.hours - 1 === 1 ? "hour" : "hours"} left afterward.`,
+    );
+  expect(game.choices.find((c) => c.id === "compare")?.cost).toBe(
+    "1 hour to obtain and check the original; no time to recuperate.",
+  );
+  expect(hashGame(game)).toBe(beforeCompareView);
 });
 
 it("refuses a 3.x export before building a run, with a start-fresh message", () => {
