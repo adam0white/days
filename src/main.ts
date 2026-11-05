@@ -300,7 +300,7 @@ function render(focus = false) {
       const line = document.createElement("span");
       line.textContent =
         stage === "opening"
-          ? "📒 Settle account · ✉ Keep visit · 🔒 Protect privacy · ⏳ 3 days"
+          ? "📒 Settle account · ✉ Keep visit · 🔒 Protect privacy · ⏳ 3 days ⚠ May leave unfinished"
           : stage === "account"
             ? "📄 ? → Choose how to handle the account"
             : `↳ ${current.title} · Choose what happens next.`;
@@ -344,10 +344,10 @@ function render(focus = false) {
         [
           "visit",
           game.confirmed || game.deliveryAssigned ? "answered" : "pending",
-          game.confirmed
-            ? "✉ Visit kept"
-            : game.deliveryAssigned
-              ? "✉ Delivery agreed"
+          game.deliveryAssigned
+            ? "✉ Delivery agreed"
+            : game.confirmed
+              ? "✉ Visit kept"
               : "✉ Visit unanswered",
         ],
         [

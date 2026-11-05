@@ -50,3 +50,29 @@ test("an unfinished guide survives reloading the current run", async ({ page }) 
   await exposed(page, '[data-guide="opening"]');
   await page.locator("[data-guide-skip]").click();
 });
+
+test("an agreed delivery is not described as a completed visit", async ({ page }) => {
+  await page.addInitScript(() => {
+    crypto.getRandomValues = ((array: Uint32Array) => {
+      array[0] = 42;
+      return array;
+    }) as typeof crypto.getRandomValues;
+  });
+  await page.goto("/");
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  for (const action of [
+    "welcome",
+    "check",
+    "private",
+    "hide",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "name",
+    "leave",
+  ]) {
+    await page.locator(`[data-action="${action}"]`).click();
+  }
+  await expect(page.locator("[data-guide-visit]")).toHaveText("✉ Delivery agreed");
+});
