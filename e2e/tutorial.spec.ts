@@ -21,15 +21,21 @@ test("first choices and their real aftermath remain visible and skippable", asyn
   await exposed(page, "[data-guide-target]");
   await exposed(page, "[data-guide-skip]");
   await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
   await exposed(page, '[data-guide="account"]');
   await exposed(page, "[data-guide-target]");
   await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
   await exposed(page, '[data-guide="result"]');
   await expect(page.locator("[data-guide-account]")).toHaveAttribute("data-state", "pending");
   await expect(page.locator("[data-guide-account]")).toContainText("Receipt obtained");
   await expect(page.locator("[data-guide-privacy]")).toHaveAttribute("data-state", "private");
   await exposed(page, '[data-action="read"]');
   await page.locator('[data-action="read"]').click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
   await expect(page.locator("[data-guide-privacy]")).toHaveAttribute("data-state", "exposed");
   await exposed(page, "[data-guide-skip]");
   await page.locator("[data-guide-skip]").click();
@@ -75,4 +81,25 @@ test("an agreed delivery is not described as a completed visit", async ({ page }
     await page.locator(`[data-action="${action}"]`).click();
   }
   await expect(page.locator("[data-guide-visit]")).toHaveText("✉ Delivery agreed");
+  await page.locator('[data-action="speak"]').click();
+  await page.locator('[data-action="close"]').click();
+  await page.locator("#menu").click();
+  await page.locator("#guide-replay").click();
+  await exposed(page, '[data-guide="continue"]');
+  await exposed(page, "[data-guide-skip]");
+});
+
+test("a decision leaves its new scene in view before the player moves to choices", async ({
+  page,
+}) => {
+  await page.goto("/");
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  await exposed(page, "[data-guide-target]");
+  await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#title");
+  await exposed(page, "#text p");
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
+  await exposed(page, '[data-guide="account"]');
+  await exposed(page, "[data-guide-target]");
 });

@@ -70,6 +70,11 @@ replayGuide.addEventListener("click", () => {
   store("days-guide-active", "1");
   menu.close();
   render();
+  requestAnimationFrame(() =>
+    document
+      .querySelector<HTMLElement>("[data-guide]")
+      ?.scrollIntoView({ block: "start", behavior: "instant" }),
+  );
 });
 let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
 let disposed = false;
@@ -162,6 +167,7 @@ phoneLayout.addEventListener("change", () => {
 });
 function render(focus = false) {
   document.querySelector("[data-guide]")?.remove();
+  document.getElementById("guide-choices")?.remove();
   const current = view(game);
   const skipped = game.chapter?.skipped ?? [];
   const continuityNotice = skipped
@@ -288,8 +294,15 @@ function render(focus = false) {
     });
     get("choices").append(button);
   }
-  if (guide && current.outcome === "playing" && current.choices.length) {
-    const stage = game.step === 0 ? "opening" : game.step === 1 ? "account" : "result";
+  if (guide && (current.choices.length || current.outcome !== "playing")) {
+    const stage =
+      current.outcome !== "playing"
+        ? "continue"
+        : game.step === 0
+          ? "opening"
+          : game.step === 1
+            ? "account"
+            : "result";
     const target = get("choices").querySelector<HTMLButtonElement>("button.choice");
     if (target) {
       for (const choice of get("choices").querySelectorAll<HTMLButtonElement>("button.choice"))
@@ -299,18 +312,22 @@ function render(focus = false) {
       cue.dataset.guide = stage;
       const line = document.createElement("span");
       line.textContent =
-        stage === "opening"
-          ? "📒 Settle account · ✉ Keep visit · 🔒 Protect privacy · ⏳ 3 days ⚠ May leave unfinished"
-          : stage === "account"
-            ? "📄 ? → Choose how to handle the account"
-            : `↳ ${current.title} · Choose what happens next.`;
+        stage === "continue"
+          ? "Start another three days to revisit first steps."
+          : stage === "opening"
+            ? "📒 Settle account · ✉ Keep visit · 🔒 Protect privacy · ⏳ 3 days ⚠ May leave unfinished"
+            : stage === "account"
+              ? "📄 ? → Choose how to handle the account"
+              : `↳ ${current.title} · Choose what happens next.`;
       line.setAttribute(
         "aria-label",
-        stage === "opening"
-          ? "Keep the account clear, answer the promised visit, and protect privacy before the third evening. You can leave these unfinished."
-          : stage === "account"
-            ? "Choose how to handle the account."
-            : "Your choice changed the story. Choose what happens next.",
+        stage === "continue"
+          ? "Start another three days to revisit first steps."
+          : stage === "opening"
+            ? "Keep the account clear, answer the promised visit, and protect privacy before the third evening. You can leave these unfinished."
+            : stage === "account"
+              ? "Choose how to handle the account."
+              : "Your choice changed the story. Choose what happens next.",
       );
       const skip = document.createElement("button");
       skip.type = "button";
@@ -321,6 +338,7 @@ function render(focus = false) {
         store("days-guide-done", "1");
         store("days-guide-active", "0");
         cue.remove();
+        document.getElementById("guide-choices")?.remove();
         get("choices")
           .querySelectorAll("[data-guide-target]")
           .forEach((choice) => choice.removeAttribute("data-guide-target"));
@@ -365,7 +383,18 @@ function render(focus = false) {
       }
       cue.append(line, state, skip);
       get("choices").before(cue);
-      if (!notice.open) {
+      if (game.step > 0) {
+        const jump = document.createElement("button");
+        jump.type = "button";
+        jump.id = "guide-choices";
+        jump.textContent = "See choices ↓";
+        jump.addEventListener("click", () => {
+          cue.scrollIntoView({ block: "start", behavior: "instant" });
+          target.scrollIntoView({ block: "nearest", behavior: "instant" });
+        });
+        get("title").after(jump);
+      }
+      if (!notice.open && game.step === 0) {
         requestAnimationFrame(() => {
           cue.scrollIntoView({ block: "start", behavior: "instant" });
           target.scrollIntoView({ block: "nearest", behavior: "instant" });

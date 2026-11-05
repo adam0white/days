@@ -693,3 +693,11 @@ dialog input[type="checkbox"] {
   font-size: 12px;
   font-weight: 500;
 }
+
+#guide-choices {
+  flex: none;
+  border: 1px solid #784331;
+  background: #f7e7bd;
+  color: #243b38;
+  padding: 6px 12px;
+}
