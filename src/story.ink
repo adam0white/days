@@ -68,7 +68,7 @@ Burak says, "I was wrong to call it one account. {checked():We have the original
 # title: Across the city
 {helped():Someone has agreed to cover the door for a short shift.|Nobody has agreed to cover the door. A visit still needs a named person and a time.}
 Şükrü answers the phone. "I wanted the photograph. He kept saying he would come." The letter offers no explanation for the years he did not.
-* [Agree on who will visit Şükrü and when. # action:delegate]
+* [Agree that Leyla will visit Şükrü before departure. # action:delegate]
  -> whisper
 * [Arrange a later delivery with Şükrü. Give up seeing him on this trip. # action:conceal]
  -> whisper

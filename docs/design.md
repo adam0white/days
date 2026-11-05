@@ -219,7 +219,7 @@ Current item dispositions (owner upkeep, 2026-11-05; prior rows below remain his
 | F-3147 longer days | 2026-11-12 | Changing available time changes the careful/careless choice balance; compare an authored budget first. |
 | F-3148 free speech and actions | 2026-11-12 | Define supported statements and consequences before accepting free text that the host cannot enact. |
 | F-3149 replay variety | 2026-11-12 | Design a distinct supported situation before adding variations of existing option text. |
-| F-3151 named visit | 2026-11-05 candidate | The choice now says to agree on who will visit and when. Source and deployment gates remain. |
+| F-3151 named visit | 2026-11-05 candidate | The choice now says to agree that Leyla will visit before departure. Source and deployment gates remain. |
 | F-3152 retain hour explanation | 2026-11-05 retained | Keep the delivered work/rest explanation; no new rule or time budget change. |
 | F-3153 insufficient-time visit | 2026-11-12 | Trace the available attempt and ending consequences before rewriting its warning. |
 | F-3154 early names | 2026-11-12 | Identify the first repeated introductions on the current opening before adding roles to each name. |
