@@ -13,6 +13,18 @@ async function exposed(page: Page, selector: string) {
     .toBe(true);
 }
 
+test("opening controls fit with expanded text metrics", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.endsWith("phone"));
+  await page.goto("/");
+  await page.addStyleTag({ content: ".stage { letter-spacing: 0.04em !important; }" });
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  await exposed(page, '[data-guide="opening"]');
+  await exposed(page, "[data-guide-target]");
+  await exposed(page, '[data-action="alone"]');
+  await exposed(page, "[data-guide-skip]");
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
 test("first choices and their real aftermath remain visible and skippable", async ({ page }) => {
   await page.goto("/");
   const begin = page.locator("#begin-off");
