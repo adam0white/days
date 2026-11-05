@@ -734,7 +734,7 @@ dialog input[type="checkbox"] {
   }
   .room-stage:has([data-guide="opening"]) #room-instruction,
   .room-stage:has([data-guide="opening"]) #room-status {
-    padding-block: 4px;
+    padding-block: 0;
   }
   .room-stage:has([data-guide="opening"]) [data-object="bowl"] .object-mark {
     margin-top: 0;
@@ -763,5 +763,6 @@ dialog input[type="checkbox"] {
 @media (max-width: 700px) {
   .room-stage:has([data-guide="opening"]) .choice {
     gap: 4px;
+    padding-block: 5px;
   }
 }
