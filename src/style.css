@@ -662,3 +662,34 @@ dialog input[type="checkbox"] {
 .privacy-debug details {
   flex: 1;
 }
+.guide {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 18px;
+  color: #243b38;
+  background: #f7e7bd;
+  font-weight: 600;
+}
+.guide button {
+  flex: none;
+  background: #fffaf0;
+  border: 1px solid #784331;
+  padding: 6px 12px;
+}
+[data-guide-target] {
+  outline: 3px solid #e9b659;
+  outline-offset: 3px;
+}
+
+.guide {
+  flex-wrap: wrap;
+}
+.guide-state {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
