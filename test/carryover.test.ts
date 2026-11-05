@@ -664,7 +664,7 @@ it("admits an SDK-validated retained-v2 Days role with an explicit clock mapping
     castRevision: canonicalCast(id).revision,
     branchId: "retained-control",
     parentRevision: null,
-    source: { game: "days", build: "control", engine: "4.8.1", rules: "control" },
+    source: { game: "days", build: "control", engine: "4.17.0", rules: "control" },
     transfer: {
       castPassport: "hf-portable-person/2",
       portable,
