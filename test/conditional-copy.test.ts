@@ -15,8 +15,8 @@ it("asks the actual receipt holder for evidence without Burak asking for his own
       (i) => createGame(i).evidenceHolder === holder,
     )!;
     const game = play(["welcome"], seed);
-    expect(text(game)).toContain(`${holder} has the receipt`);
-    expect(text(game)).toContain(holder === "Burak" ? "He unfolds it" : `Burak asks ${holder}`);
+    expect(text(game)).toContain(`${holder} has a phone photograph of the receipt`);
+    expect(text(game)).toContain(holder === "Burak" ? "He opens it" : `Burak asks ${holder}`);
   }
 });
 

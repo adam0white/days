@@ -1,3 +1,4 @@
+import { readRunHistory } from "@adam0white/human-framework";
 import { describe, expect, it } from "vitest";
 import { choose, createGame, exportRun, hashGame, replay, view } from "../src/engine.ts";
 import { decisions, finished, LEYLA, SELIN, tie } from "./actors.ts";
@@ -283,7 +284,7 @@ it("refuses a 3.x export before building a run, with a start-fresh message", () 
 
 it("charges each Ink choice once: one HF decision and one settled act per choice", () => {
   const game = play(42, win);
-  const kinds = game.actors.history.flatMap((t) =>
+  const kinds = readRunHistory(game.actors).flatMap((t) =>
     t.inputs.map(
       (input) => `${input.kind}:${"person" in input.payload ? input.payload.person : ""}`,
     ),

@@ -23,7 +23,7 @@ Keep a clear account and answer the promised visit before the third evening. Pro
 === claim ===
 # title: A folded account
 Burak brings two repair bills. Kemal wrote "advance returned" across both. Burak paid for an earlier repair; Şükrü paid for the boiler. The crossed-out line does not say who got their money back.
-{holder()} has the receipt. {burak_holds():He unfolds it. "Let me check which repair this belongs to," he says.|Burak asks {holder()}, "Can we check which repair that receipt belongs to?"}
+{holder()} has a phone photograph of the receipt. {burak_holds():He opens it. "Let me check which repair this belongs to," he says.|Burak asks {holder()}, "Can we check which repair that receipt belongs to?"}
 // Source: human-framework research/janazah-and-taziyah-sources.md §6, Tirmidhi 1078/1079 row (raw, Good per Ali Za'i), and §8.6. This is Şükrü's belief and fear; no state of Kemal is asserted or modelled.
 Şükrü says, "I believe the saying that a believer's soul remains suspended by a debt until it is paid. That frightens me. I want this paid today." Burak says, "Then let's find out which bill is still open."
 * [Ask Burak to check the paper before any payment. # action:check]
@@ -68,7 +68,7 @@ Burak says, "I was wrong to call it one account. {checked():We have the original
 # title: Across the city
 {helped():Someone has agreed to cover the door for a short shift.|Nobody has agreed to cover the door. A visit still needs a named person and a time.}
 Şükrü answers the phone. "I wanted the photograph. He kept saying he would come." The letter offers no explanation for the years he did not.
-* [Ask for a named visit and get Şükrü's agreement. # action:delegate]
+* [Agree that Leyla will visit Şükrü before departure. # action:delegate]
  -> whisper
 * [Arrange a later delivery with Şükrü. Give up seeing him on this trip. # action:conceal]
  -> whisper

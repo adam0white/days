@@ -207,6 +207,23 @@ No blocking ask arose. I could choose delivery and continue.
 
 ### Deferred — review 2026-11-03
 
+Current follow-up checkpoint (2026-11-05): **2026-11-12** replaces expired November 3 review targets below. Recheck unresolved input/clarity causes against current source, and keep actual owner or device acceptance separate from automated delivery. Larger content, sound, movement or difficulty changes need their own authored comparison; cross-game continuation remains outside this upkeep scope. Future targets and historical fixed-result records remain unchanged.
+
+Current item dispositions (owner upkeep, 2026-11-05; prior rows below remain historical):
+
+| Item | Checkpoint or disposition | Reason |
+| --- | --- | --- |
+| F-3144/F-3150 payment amounts | 2026-11-12 | The host currently models payment as a choice, not a numeric savings ledger; author consistent bill and savings amounts before displaying invented numbers. |
+| F-3145 receipt/original ambiguity | 2026-11-05 candidate | Initial copy now identifies a phone photograph; the later original remains a separate retrieval. Source and deployment gates remain. |
+| F-3146 pale cost text | 2026-11-12 | Measure contrast and font size on the actual current phone room drawing before changing its cost typography. |
+| F-3147 longer days | 2026-11-12 | Changing available time changes the careful/careless choice balance; compare an authored budget first. |
+| F-3148 free speech and actions | 2026-11-12 | Define supported statements and consequences before accepting free text that the host cannot enact. |
+| F-3149 replay variety | 2026-11-12 | Design a distinct supported situation before adding variations of existing option text. |
+| F-3151 named visit | 2026-11-05 candidate | The choice now says to agree that Leyla will visit before departure. Source and deployment gates remain. |
+| F-3152 retain hour explanation | 2026-11-05 retained | Keep the delivered work/rest explanation; no new rule or time budget change. |
+| F-3153 insufficient-time visit | 2026-11-12 | Trace the available attempt and ending consequences before rewriting its warning. |
+| F-3154 early names | 2026-11-12 | Identify the first repeated introductions on the current opening before adding roles to each name. |
+
 These are reached nonblocking preferences or a retain request. The ordinary panel cap has been reached. Preserve each request separately; do not infer permission to change difficulty, faith, state costs or add free text from this record.
 
 #### F-3144 — emre
