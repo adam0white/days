@@ -207,6 +207,8 @@ No blocking ask arose. I could choose delivery and continue.
 
 ### Deferred — review 2026-11-03
 
+Current follow-up checkpoint (2026-11-05): **2026-11-12** replaces expired November 3 review targets below. Recheck unresolved input/clarity causes against current source, and keep actual owner or device acceptance separate from automated delivery. Larger content, sound, movement or difficulty changes need their own authored comparison; cross-game continuation remains outside this upkeep scope. Future targets and historical fixed-result records remain unchanged.
+
 These are reached nonblocking preferences or a retain request. The ordinary panel cap has been reached. Preserve each request separately; do not infer permission to change difficulty, faith, state costs or add free text from this record.
 
 #### F-3144 — emre
