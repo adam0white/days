@@ -58,6 +58,24 @@ if (saved) {
       " The earlier saved play remains on this device. This new play is not saved until you confirm New game.";
   }
 }
+let guide = read("days-guide-active") === "1" || (!restored && read("days-guide-done") !== "1");
+if (guide) store("days-guide-active", "1");
+const replayGuide = document.createElement("button");
+replayGuide.id = "guide-replay";
+replayGuide.type = "button";
+replayGuide.textContent = "Replay first steps";
+get("menu-home").append(replayGuide);
+replayGuide.addEventListener("click", () => {
+  guide = true;
+  store("days-guide-active", "1");
+  menu.close();
+  render();
+  requestAnimationFrame(() =>
+    document
+      .querySelector<HTMLElement>("[data-guide]")
+      ?.scrollIntoView({ block: "start", behavior: "instant" }),
+  );
+});
 let room: Awaited<ReturnType<typeof mountRoom>> | undefined;
 let disposed = false;
 let busy = true;
@@ -148,6 +166,8 @@ phoneLayout.addEventListener("change", () => {
   if (context) context.open = !phoneLayout.matches;
 });
 function render(focus = false) {
+  document.querySelector("[data-guide]")?.remove();
+  document.getElementById("guide-choices")?.remove();
   const current = view(game);
   const skipped = game.chapter?.skipped ?? [];
   const continuityNotice = skipped
@@ -274,6 +294,108 @@ function render(focus = false) {
     });
     get("choices").append(button);
   }
+  if (guide && (current.choices.length || current.outcome !== "playing")) {
+    const stage =
+      current.outcome !== "playing"
+        ? "continue"
+        : game.step === 0
+          ? "opening"
+          : game.step === 1
+            ? "account"
+            : "result";
+    const target = get("choices").querySelector<HTMLButtonElement>("button.choice");
+    if (target) {
+      for (const choice of get("choices").querySelectorAll<HTMLButtonElement>("button.choice"))
+        choice.dataset.guideTarget = "";
+      const cue = document.createElement("aside");
+      cue.className = "guide";
+      cue.dataset.guide = stage;
+      const line = document.createElement("span");
+      line.textContent =
+        stage === "continue"
+          ? "Start another three days to revisit first steps."
+          : stage === "opening"
+            ? "📒 Settle account · ✉ Keep visit · 🔒 Protect privacy · ⏳ 3 days ⚠ May leave unfinished"
+            : stage === "account"
+              ? "📄 ? → Choose how to handle the account"
+              : `↳ ${current.title} · Choose what happens next.`;
+      line.setAttribute(
+        "aria-label",
+        stage === "continue"
+          ? "Start another three days to revisit first steps."
+          : stage === "opening"
+            ? "Keep the account clear, answer the promised visit, and protect privacy before the third evening. You can leave these unfinished."
+            : stage === "account"
+              ? "Choose how to handle the account."
+              : "Your choice changed the story. Choose what happens next.",
+      );
+      const skip = document.createElement("button");
+      skip.type = "button";
+      skip.dataset.guideSkip = "";
+      skip.textContent = "Skip first steps";
+      skip.addEventListener("click", () => {
+        guide = false;
+        store("days-guide-done", "1");
+        store("days-guide-active", "0");
+        cue.remove();
+        document.getElementById("guide-choices")?.remove();
+        get("choices")
+          .querySelectorAll("[data-guide-target]")
+          .forEach((choice) => choice.removeAttribute("data-guide-target"));
+      });
+      const state = document.createElement("div");
+      state.className = "guide-state";
+      const facts: [string, string, string][] = [
+        [
+          "account",
+          game.named ? "recorded" : "pending",
+          game.paidCreditor
+            ? "📒 Verified bill paid"
+            : game.estateFollowup
+              ? "📒 Account recorded; follow-up pending"
+              : game.named
+                ? "📒 Account recorded"
+                : game.checked
+                  ? "📒 Receipt obtained; account unresolved"
+                  : "📒 Account unresolved",
+        ],
+        [
+          "visit",
+          game.confirmed || game.deliveryAssigned ? "answered" : "pending",
+          game.deliveryAssigned
+            ? "✉ Delivery agreed"
+            : game.confirmed
+              ? "✉ Visit kept"
+              : "✉ Visit unanswered",
+        ],
+        [
+          "privacy",
+          game.privacy ? "private" : "exposed",
+          game.privacy ? "🔒 Page private" : "🔓 Page shared",
+        ],
+      ];
+      for (const [key, value, label] of facts) {
+        const item = document.createElement("span");
+        item.setAttribute(`data-guide-${key}`, "");
+        item.dataset.state = value;
+        item.textContent = label;
+        state.append(item);
+      }
+      cue.append(line, state, skip);
+      get("choices").before(cue);
+      if (game.step > 0) {
+        const jump = document.createElement("button");
+        jump.type = "button";
+        jump.id = "guide-choices";
+        jump.textContent = "See choices ↓";
+        jump.addEventListener("click", () => {
+          cue.scrollIntoView({ block: "start", behavior: "instant" });
+          target.scrollIntoView({ block: "nearest", behavior: "instant" });
+        });
+        get("title").after(jump);
+      }
+    }
+  }
   room?.update(current);
   lab.screen(current.outcome === "playing" ? `day ${current.day}` : "ending");
   if (current.outcome !== "playing") lab.milestone("ending reached");
@@ -370,6 +492,7 @@ function begin(off = false) {
   notice.close();
   save();
   get("title").focus();
+  render();
 }
 get("begin").addEventListener("click", () => begin());
 get("begin-off").addEventListener("click", () => begin(true));

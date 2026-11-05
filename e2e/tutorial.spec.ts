@@ -1,0 +1,118 @@
+import { expect, type Page, test } from "@playwright/test";
+
+async function exposed(page: Page, selector: string) {
+  const node = page.locator(selector).first();
+  await expect(node).toBeInViewport({ ratio: 1 });
+  await expect
+    .poll(() =>
+      node.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
+      }),
+    )
+    .toBe(true);
+}
+
+test("opening controls fit with expanded text metrics", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.endsWith("phone"));
+  await page.goto("/");
+  await page.addStyleTag({ content: ".stage { letter-spacing: 0.06em !important; }" });
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  await exposed(page, '[data-guide="opening"]');
+  await exposed(page, "[data-guide-target]");
+  await exposed(page, '[data-action="alone"]');
+  await exposed(page, "[data-guide-skip]");
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+});
+
+test("first choices and their real aftermath remain visible and skippable", async ({ page }) => {
+  await page.goto("/");
+  const begin = page.locator("#begin-off");
+  if (await begin.isVisible()) await begin.click();
+  await exposed(page, '[data-guide="opening"]');
+  await exposed(page, "[data-guide-target]");
+  await exposed(page, '[data-action="alone"]');
+  await exposed(page, "[data-guide-skip]");
+  await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
+  await exposed(page, '[data-guide="account"]');
+  await exposed(page, "[data-guide-target]");
+  await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
+  await exposed(page, '[data-guide="result"]');
+  await expect(page.locator("[data-guide-account]")).toHaveAttribute("data-state", "pending");
+  await expect(page.locator("[data-guide-account]")).toContainText("Receipt obtained");
+  await expect(page.locator("[data-guide-privacy]")).toHaveAttribute("data-state", "private");
+  await exposed(page, '[data-action="read"]');
+  await page.locator('[data-action="read"]').click();
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
+  await expect(page.locator("[data-guide-privacy]")).toHaveAttribute("data-state", "exposed");
+  await exposed(page, "[data-guide-skip]");
+  await page.locator("[data-guide-skip]").click();
+  await expect(page.locator("[data-guide]")).toHaveCount(0);
+  const saved = await page.evaluate(() => localStorage.getItem("days-run-v1"));
+  await page.locator("#menu").click();
+  await page.locator("#guide-replay").click();
+  await exposed(page, "[data-guide]");
+  await expect.poll(() => page.evaluate(() => localStorage.getItem("days-run-v1"))).toBe(saved);
+  await page.locator("[data-guide-skip]").click();
+});
+
+test("an unfinished guide survives reloading the current run", async ({ page }) => {
+  await page.goto("/");
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  await exposed(page, '[data-guide="opening"]');
+  await page.reload();
+  await exposed(page, '[data-guide="opening"]');
+  await page.locator("[data-guide-skip]").click();
+});
+
+test("an agreed delivery is not described as a completed visit", async ({ page }) => {
+  await page.addInitScript(() => {
+    crypto.getRandomValues = ((array: Uint32Array) => {
+      array[0] = 42;
+      return array;
+    }) as typeof crypto.getRandomValues;
+  });
+  await page.goto("/");
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  for (const action of [
+    "welcome",
+    "check",
+    "private",
+    "hide",
+    "push",
+    "compare",
+    "delegate",
+    "protect",
+    "name",
+    "leave",
+  ]) {
+    await page.locator(`[data-action="${action}"]`).click();
+  }
+  await expect(page.locator("[data-guide-visit]")).toHaveText("✉ Delivery agreed");
+  await page.locator('[data-action="speak"]').click();
+  await page.locator('[data-action="close"]').click();
+  await page.locator("#menu").click();
+  await page.locator("#guide-replay").click();
+  await exposed(page, '[data-guide="continue"]');
+  await exposed(page, "[data-guide-skip]");
+});
+
+test("a decision leaves its new scene in view before the player moves to choices", async ({
+  page,
+}) => {
+  await page.goto("/");
+  if (await page.locator("#begin-off").isVisible()) await page.locator("#begin-off").click();
+  await exposed(page, "[data-guide-target]");
+  await page.locator("[data-guide-target]").first().click();
+  await exposed(page, "#title");
+  await exposed(page, "#text p");
+  await exposed(page, "#guide-choices");
+  await page.locator("#guide-choices").click();
+  await exposed(page, '[data-guide="account"]');
+  await exposed(page, "[data-guide-target]");
+});
