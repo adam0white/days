@@ -19,6 +19,7 @@ test("first choices and their real aftermath remain visible and skippable", asyn
   if (await begin.isVisible()) await begin.click();
   await exposed(page, '[data-guide="opening"]');
   await exposed(page, "[data-guide-target]");
+  await exposed(page, '[data-action="alone"]');
   await exposed(page, "[data-guide-skip]");
   await page.locator("[data-guide-target]").first().click();
   await exposed(page, "#guide-choices");

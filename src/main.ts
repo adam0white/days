@@ -394,12 +394,6 @@ function render(focus = false) {
         });
         get("title").after(jump);
       }
-      if (!notice.open && game.step === 0) {
-        requestAnimationFrame(() => {
-          cue.scrollIntoView({ block: "start", behavior: "instant" });
-          target.scrollIntoView({ block: "nearest", behavior: "instant" });
-        });
-      }
     }
   }
   room?.update(current);

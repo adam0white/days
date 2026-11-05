@@ -701,3 +701,47 @@ dialog input[type="checkbox"] {
   color: #243b38;
   padding: 6px 12px;
 }
+@media (max-width: 700px) {
+  .guide[data-guide="opening"] {
+    gap: 3px 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+  .guide[data-guide="opening"] .guide-state {
+    gap: 3px 8px;
+    font-size: 10px;
+  }
+  .guide[data-guide="opening"] button {
+    min-height: 44px;
+    padding: 3px 8px;
+  }
+  .room-stage:has([data-guide="opening"]) [data-object="bowl"] .object-mark {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 700px) {
+  .stage:has([data-guide="opening"]) #choices {
+    padding-top: 1px;
+  }
+}
+@media (max-width: 700px) {
+  .room-stage:has([data-guide="opening"]) .choice:nth-child(2) {
+    margin-top: 0;
+  }
+}
+@media (max-width: 700px) {
+  .room-stage:has([data-guide="opening"]) [data-object="door"] .object-mark {
+    height: 38px;
+    width: 48px;
+  }
+  .room-stage:has([data-guide="opening"]) [data-object="door"] .object-mark::after {
+    top: 18px;
+  }
+}
+@media (max-width: 700px) {
+  .room-stage:has([data-guide="opening"]) .choice {
+    gap: 4px;
+  }
+}
